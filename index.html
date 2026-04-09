@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LabSkill — Distill Elite Research Minds</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#0d0d0d;--cream:#f5f0e8;--muted:#6b6560;--accent:#c8502a;--border:rgba(13,13,13,0.12);--mono:'DM Mono',monospace;--serif:'Instrument Serif',serif;--sans:'DM Sans',sans-serif;}
+:root{--ink:#0d0d0d;--cream:#f5f0e8;--muted:#6b6560;--accent:#c8502a;--border:rgba(13,13,13,0.12);--mono:'JetBrains Mono',monospace;--serif:'Instrument Serif',serif;--sans:'Inter',sans-serif;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
-body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.6;min-height:100vh;}
+body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weight:400;line-height:1.65;min-height:100vh;-webkit-font-smoothing:antialiased;}
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 48px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(245,240,232,0.95);backdrop-filter:blur(12px);}
 .nav-logo{font-family:var(--mono);font-size:15px;font-weight:500;}
 .nav-logo span{color:var(--accent);}
@@ -172,6 +172,18 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:0 48px;}
 .output-body .md-render td{padding:8px 12px;border-bottom:1px solid var(--border);}
 .output-body .md-render blockquote{border-left:3px solid var(--accent);padding:8px 16px;margin:12px 0;color:var(--muted);}
 
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:48px;}
+.quick-card{background:white;border:1px solid var(--border);padding:20px 22px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
+.quick-card:hover{border-color:var(--ink);transform:translateY(-1px);}
+.quick-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);opacity:0;transition:opacity .15s;}
+.quick-card:hover::before{opacity:1;}
+.quick-name{font-family:var(--serif);font-size:17px;font-weight:400;margin-bottom:2px;}
+.quick-inst{font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:10px;}
+.quick-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px;}
+.quick-tags{display:flex;flex-wrap:wrap;gap:5px;}
+.quick-tag{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px solid var(--border);padding:2px 7px;}
+.quick-arrow{position:absolute;bottom:16px;right:16px;font-family:var(--mono);font-size:11px;color:var(--muted);opacity:0;transition:opacity .15s;}
+.quick-card:hover .quick-arrow{opacity:1;}
 .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;}
 .how-card{padding:32px 0;border-top:2px solid var(--ink);}
 .how-num{font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:16px;}
@@ -238,6 +250,7 @@ footer a:hover{color:var(--ink);}
 <nav>
   <div class="nav-logo">Lab<span>Skill</span></div>
   <div class="nav-links">
+    <a href="#examples">Examples</a>
     <a href="#discover">Discover</a>
     <a href="#distill">Distill</a>
     <a href="chat.html">Chat & Roundtable</a>
@@ -400,6 +413,57 @@ footer a:hover{color:var(--ink);}
 
 <hr class="divider">
 
+<div class="section" id="examples">
+  <div class="section-tag">// quick start — click any researcher to distill</div>
+  <h2>Featured researchers</h2>
+  <div class="quick-grid">
+    <div class="quick-card" onclick="quickDistill('Alan Sanfey','Radboud University','Social and moral decision-making, ultimatum game, inequality aversion')">
+      <div class="quick-name">Alan Sanfey</div>
+      <div class="quick-inst">Radboud University</div>
+      <div class="quick-desc">Social decision neuroscience, fairness, the ultimatum game, neural basis of economic choices.</div>
+      <div class="quick-tags"><span class="quick-tag">social neuroscience</span><span class="quick-tag">fMRI</span><span class="quick-tag">decision-making</span></div>
+      <div class="quick-arrow">Distill →</div>
+    </div>
+    <div class="quick-card" onclick="quickDistill('Molly Crockett','Princeton University','Moral psychology, harm aversion, online outrage, serotonin and moral judgment')">
+      <div class="quick-name">Molly Crockett</div>
+      <div class="quick-inst">Princeton University</div>
+      <div class="quick-desc">Moral psychology, harm aversion, how neurotransmitters shape ethical decisions.</div>
+      <div class="quick-tags"><span class="quick-tag">moral psychology</span><span class="quick-tag">harm aversion</span><span class="quick-tag">serotonin</span></div>
+      <div class="quick-arrow">Distill →</div>
+    </div>
+    <div class="quick-card" onclick="quickDistill('Dana Small','Yale University','Nutrition cognition gut-brain axis taste reward obesity food choice')">
+      <div class="quick-name">Dana Small</div>
+      <div class="quick-inst">Yale University</div>
+      <div class="quick-desc">Gut-brain axis, taste perception, how nutrition shapes reward and cognition.</div>
+      <div class="quick-tags"><span class="quick-tag">nutrition & brain</span><span class="quick-tag">reward</span><span class="quick-tag">gut-brain</span></div>
+      <div class="quick-arrow">Distill →</div>
+    </div>
+    <div class="quick-card" onclick="quickDistill('Jean Decety','University of Chicago','Empathy moral development prosocial behavior neuroscience altruism')">
+      <div class="quick-name">Jean Decety</div>
+      <div class="quick-inst">University of Chicago</div>
+      <div class="quick-desc">Empathy, moral development, prosocial behavior, the neuroscience of altruism.</div>
+      <div class="quick-tags"><span class="quick-tag">empathy</span><span class="quick-tag">prosocial</span><span class="quick-tag">development</span></div>
+      <div class="quick-arrow">Distill →</div>
+    </div>
+    <div class="quick-card" onclick="quickDistill('Matthew Rushworth','University of Oxford','Value-based decision making prefrontal cortex TMS computational')">
+      <div class="quick-name">Matthew Rushworth</div>
+      <div class="quick-inst">University of Oxford</div>
+      <div class="quick-desc">Value-based decisions, prefrontal cortex, computational models of choice.</div>
+      <div class="quick-tags"><span class="quick-tag">value decisions</span><span class="quick-tag">prefrontal</span><span class="quick-tag">TMS</span></div>
+      <div class="quick-arrow">Distill →</div>
+    </div>
+    <div class="quick-card" onclick="quickDistill('Antonio Rangel','Caltech','Neuroeconomics food choice computational models value coding vmPFC')">
+      <div class="quick-name">Antonio Rangel</div>
+      <div class="quick-inst">Caltech</div>
+      <div class="quick-desc">Neuroeconomics, food decisions, how the brain computes value and drives choice.</div>
+      <div class="quick-tags"><span class="quick-tag">neuroeconomics</span><span class="quick-tag">food choice</span><span class="quick-tag">vmPFC</span></div>
+      <div class="quick-arrow">Distill →</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
 <div class="section" id="how">
   <div class="section-tag">// how it works</div>
   <h2>Three steps to a research mind</h2>
@@ -509,8 +573,7 @@ function requireKey() {
 async function callClaude(messages, { useWebSearch = false, maxTokens = 2000 } = {}) {
   const body = {
     model: 'claude-sonnet-4-20250514',
-    max_tokens: maxTokens,
-    messages,
+    max_tokens: maxTokens,messages:messages,
   };
   if (useWebSearch) {
     body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
@@ -533,6 +596,18 @@ async function callClaude(messages, { useWebSearch = false, maxTokens = 2000 } =
 }
 
 // ── DISCOVER ──────────────────────────────────────────────
+function quickDistill(name, inst, hint) {
+  // Fill in the distill form and scroll to it
+  document.getElementById('lab-who').value = name;
+  var banner = document.getElementById('prefilled-banner');
+  banner.textContent = '↑ Click Search to find ' + name + ' on Semantic Scholar';
+  banner.style.display = 'block';
+  switchTab('lab');
+  document.getElementById('distill').scrollIntoView({behavior:'smooth'});
+  // Auto-trigger search after short delay
+  setTimeout(function(){ searchAuthor(); }, 400);
+}
+
 function quickSearch(term) {
   document.getElementById('field-input').value = term;
   discoverLabs();
@@ -549,7 +624,7 @@ async function discoverLabs() {
   status.textContent = 'Searching for top researchers...';
   results.innerHTML = skeletonHTML();
   try {
-    const prompt = `Find the top 12 most influential researchers in: "${field}". Use web search to find real data.
+    const prompt = `Find the top 12 most influential researchers in: "${field:field}". Use web search to find real data.
 Return ONLY a valid JSON array, no markdown, no explanation:
 [{"name":"Full Name","institution":"University","country":"Country","hIndex":45,"citations":12000,"focus":"3-5 word description","tags":["tag1","tag2","tag3"]}]
 Sort by impact. Include diverse institutions. Return exactly 12.`;
@@ -660,7 +735,7 @@ async function selectAuthor(author) {
         ((brd.collection)||[]).forEach(function(p) {
           var title = p.title||'';
           if (title && !fetchedPapers.find(function(x){return x.title.toLowerCase().slice(0,30)===title.toLowerCase().slice(0,30);})) {
-            fetchedPapers.push({title,year:p.date?parseInt(p.date.slice(0,4)):null,citations:0,abstract:p.abstract||'',venue:'bioRxiv',doi:p.doi||null,source:'biorxiv'});
+            fetchedPapers.push({title:title,year:p.date?parseInt(p.date.slice(0,4)):null,citations:0,abstract:p.abstract||'',venue:'bioRxiv',doi:p.doi||null,source:'biorxiv'});
             extraCounts.biorxiv++;
           }
         });
@@ -685,7 +760,7 @@ async function selectAuthor(author) {
               var title = p.title||'';
               if (title && !fetchedPapers.find(function(x){return x.title.toLowerCase().slice(0,30)===title.toLowerCase().slice(0,30);})) {
                 var year = p.pubdate?parseInt(p.pubdate.slice(0,4)):null;
-                fetchedPapers.push({title,year,citations:0,abstract:'',venue:p.source||'PubMed',doi:null,source:'pubmed'});
+                fetchedPapers.push({title:title,year:year,citations:0,abstract:'',venue:p.source||'PubMed',doi:null,source:'pubmed'});
                 extraCounts.pubmed++;
               }
             });
@@ -832,10 +907,10 @@ Cross-validate across dimensions. Mark HIGH confidence where 3+ sources agree, M
 PHASE 2 — Synthesize all 6 dimensions + the ${top.length} papers below${pasteText?' + USER-PROVIDED MATERIALS (treat as highest quality source)':''}.`
 
 Researcher stats: h-index ${selectedAuthor.hIndex}, ${(selectedAuthor.citationCount||0).toLocaleString()} citations
-Skill purposes: ${goals}
+Skill purposes: ${goals:goals}
 
 Papers:
-${papersText}
+${papersText:papersText}
 ${pasteText ? '\n\n## USER-PROVIDED SOURCE MATERIAL (highest priority)\n' + pasteText.slice(0, 3000) : ''}
 
 RULES:
@@ -905,7 +980,7 @@ description: |
     var fangle = document.getElementById('field-angle').value.trim();
     var goals2 = getChips('field-goals')||'topic patterns, method conventions';
     currentFilename = fname.replace(/\s+/g,'-').toLowerCase().slice(0,30)+'-field.skill.md';
-    return 'Distill the research field "'+fname+'" into a Claude Code Skill file.\nTime: '+(fyear||'2019-2024')+(fjournals?'\nJournals: '+fjournals:'')+(fangle?'\nAngle: '+fangle:'')+'\nExtract: '+goals2+'\nSearch for: highest-cited papers, reviews, meta-analyses, future-directions.\nOutput ONLY CLAUDE.md with sections: Field Overview, Dominant Research Patterns, What Gets Published in Top Journals, Underexplored Gaps, Methodological Standards, Framing Conventions, Topic Templates, Reviewer Expectations, Key Papers.';
+    return 'Distill the research field "'+fname+'" into a Claude Code Skill file.\nTime: '+(fyear||'2019-2024')+(fjournals?'\nJournals: '+fjournals:'')+(fangle?'\nAngle: '+fangle:'')+'\nExtract: '+goals2+'\nSearch for: highest-cited papers,reviews:reviews, meta-analyses, future-directions.\nOutput ONLY CLAUDE.md with sections: Field Overview, Dominant Research Patterns, What Gets Published in Top Journals, Underexplored Gaps, Methodological Standards, Framing Conventions, Topic Templates, Reviewer Expectations, Key Papers.';
   }
 }
 
@@ -1002,7 +1077,7 @@ function saveAndChat() {
   if (!generated || !selectedAuthor) return;
   var skills = JSON.parse(localStorage.getItem('labskill_skills')||'[]');
   var id = 'skill-'+Date.now();
-  skills.unshift({id,name:selectedAuthor.name,affiliation:selectedAuthor.affiliation||'',hIndex:selectedAuthor.hIndex||0,citationCount:selectedAuthor.citationCount||0,skillContent:generated,savedAt:new Date().toISOString()});
+  skills.unshift({id:id,name:selectedAuthor.name,affiliation:selectedAuthor.affiliation||'',hIndex:selectedAuthor.hIndex||0,citationCount:selectedAuthor.citationCount||0,skillContent:generated,savedAt:new Date().toISOString()});
   if (skills.length>20) skills=skills.slice(0,20);
   localStorage.setItem('labskill_skills',JSON.stringify(skills));
   window.location.href='chat.html';
