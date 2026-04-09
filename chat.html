@@ -14,7 +14,7 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:52px;border-bottom:1px solid var(--border);background:var(--cream);flex-shrink:0;}
 .logo{font-family:var(--mono);font-size:13px;font-weight:500;}.logo span{color:var(--accent);}
 .topbar-tabs{display:flex;gap:0;}
-.ttab{font-family:var(--sans);font-size:13px;padding:0 18px;height:52px;display:flex;align-items:center;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;}
+.ttab{font-family:var(--sans);font-size:14px;padding:0 18px;height:52px;display:flex;align-items:center;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;}
 .ttab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:500;}
 .topbar-r{display:flex;gap:10px;align-items:center;}
 .key-btn{font-family:var(--mono);font-size:10px;padding:4px 10px;border:1px solid var(--border);cursor:pointer;background:transparent;}
@@ -32,7 +32,7 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 .skill-item:hover{background:white;}
 .skill-item.selected{background:white;border-left:2px solid var(--accent);}
 .skill-item.rt-sel{background:#fff8f6;border-left:2px solid var(--accent);}
-.skill-name{font-family:var(--serif);font-size:14px;margin-bottom:2px;}
+.skill-name{font-family:var(--serif);font-size:15px;margin-bottom:2px;}
 .skill-meta{font-family:var(--mono);font-size:9px;color:var(--muted);}
 .sidebar-empty{padding:20px 16px;font-size:12px;color:var(--muted);line-height:1.6;}
 
@@ -46,8 +46,8 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 .chat-empty p{font-size:13px;line-height:1.7;max-width:360px;}
 .msg{margin-bottom:20px;}
 .msg-label{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:5px;letter-spacing:.04em;}
-.msg-body{font-size:14px;line-height:1.75;max-width:680px;}
-.msg-body.user{background:white;border:1px solid var(--border);padding:12px 16px;}
+.msg-body{font-size:15px;line-height:1.8;max-width:680px;}
+.msg-body.user{background:white;border:1px solid var(--border);padding:13px 17px;}
 .msg-body.pi{color:var(--ink);}
 .msg-body.pi p{margin-bottom:8px;}
 .msg-body.pi strong{font-weight:600;}
@@ -65,12 +65,12 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 .starter-wrap{padding:0 32px 14px;flex-shrink:0;}
 .starter-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
 .starter-btns{display:flex;flex-wrap:wrap;gap:6px;}
-.starter-btn{font-family:var(--sans);font-size:12px;padding:6px 12px;border:1px solid var(--border);background:white;cursor:pointer;color:var(--muted);text-align:left;line-height:1.4;transition:all .15s;max-width:360px;}
+.starter-btn{font-family:var(--sans);font-size:13px;padding:6px 12px;border:1px solid var(--border);background:white;cursor:pointer;color:var(--muted);text-align:left;line-height:1.4;transition:all .15s;max-width:360px;}
 .starter-btn:hover{border-color:var(--ink);color:var(--ink);}
 
 .chat-input-wrap{padding:14px 32px;border-top:1px solid var(--border);background:white;flex-shrink:0;}
 .chat-input-row{display:flex;gap:10px;align-items:flex-end;}
-.chat-input{flex:1;background:var(--cream);border:1px solid var(--border);font-family:var(--sans);font-size:14px;padding:11px 14px;color:var(--ink);outline:none;resize:none;min-height:44px;max-height:140px;line-height:1.5;transition:border-color .2s;}
+.chat-input{flex:1;background:var(--cream);border:1px solid var(--border);font-family:var(--sans);font-size:15px;padding:11px 14px;color:var(--ink);outline:none;resize:none;min-height:44px;max-height:140px;line-height:1.5;transition:border-color .2s;}
 .chat-input:focus{border-color:var(--ink);}
 .chat-send{background:var(--ink);color:var(--cream);font-family:var(--mono);font-size:11px;padding:11px 18px;border:none;cursor:pointer;white-space:nowrap;transition:opacity .2s;height:44px;}
 .chat-send:disabled{opacity:.3;cursor:not-allowed;}.chat-send:not(:disabled):hover{opacity:.8;}
@@ -90,10 +90,10 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 .rt-msg{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);}
 .rt-msg:last-child{border-bottom:none;}
 .rt-speaker{font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:5px;letter-spacing:.04em;}
-.rt-body{font-size:14px;line-height:1.75;}
+.rt-body{font-size:15px;line-height:1.8;}
 .rt-input-wrap{padding:14px 32px;border-top:1px solid var(--border);background:white;flex-shrink:0;}
 .rt-input-row{display:flex;gap:10px;align-items:flex-end;}
-.rt-input{flex:1;background:var(--cream);border:1px solid var(--border);font-family:var(--sans);font-size:14px;padding:11px 14px;color:var(--ink);outline:none;resize:none;min-height:44px;max-height:120px;line-height:1.5;}
+.rt-input{flex:1;background:var(--cream);border:1px solid var(--border);font-family:var(--sans);font-size:15px;padding:11px 14px;color:var(--ink);outline:none;resize:none;min-height:44px;max-height:120px;line-height:1.5;}
 .rt-input:focus{border-color:var(--ink);}
 .rt-send{background:var(--ink);color:var(--cream);font-family:var(--mono);font-size:11px;padding:11px 18px;border:none;cursor:pointer;height:44px;transition:opacity .2s;}
 .rt-send:disabled{opacity:.3;cursor:not-allowed;}.rt-send:not(:disabled):hover{opacity:.8;}
@@ -110,6 +110,12 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 .bp{background:var(--ink);color:var(--cream);font-family:var(--sans);font-size:14px;font-weight:500;padding:10px 22px;border:none;cursor:pointer;flex:1;}.bp:hover{opacity:.8;}
 .bs{background:transparent;color:var(--muted);font-family:var(--sans);font-size:14px;padding:10px 22px;border:1px solid var(--border);cursor:pointer;}.bs:hover{color:var(--ink);}
 .mnote{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:10px;line-height:1.6;}
+.roles-assign{margin-bottom:10px;display:none;}
+.roles-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px;}
+.roles-row select{font-family:var(--mono);font-size:10px;padding:3px 8px;border:1px solid var(--border);background:white;outline:none;}
+.export-btn{font-family:var(--mono);font-size:10px;padding:5px 12px;border:1px solid var(--border);background:white;cursor:pointer;color:var(--muted);transition:all .15s;}
+.export-btn:hover{border-color:var(--ink);color:var(--ink);}
+.carry-badge{font-family:var(--mono);font-size:10px;background:#e8f0fe;color:#1a5fa8;border:1px solid #b3d4f5;padding:3px 10px;display:none;}
 </style>
 </head>
 <body>
@@ -182,6 +188,11 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
       <div class="mode-hint" id="mode-hint">Each PI makes one specific academic move per turn</div>
       <div class="rt-label">Selected PIs <span style="font-weight:400;color:var(--muted);">(2-4, click sidebar)</span></div>
       <div class="rt-selected" id="rt-selected"></div>
+      <div class="roles-assign" id="roles-assign"></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="carry-badge" id="carry-badge"></span>
+        <button class="export-btn" onclick="exportRoundtable()">Export transcript</button>
+      </div>
     </div>
     <div class="rt-messages" id="rt-messages">
       <div class="chat-empty"><h3>Assemble a roundtable</h3><p>Select 2-4 researchers from the sidebar, enter a topic, and start a multi-PI discussion.</p></div>
@@ -210,6 +221,59 @@ var rtSelected = [];
 var rtHistory = [];
 var discussMode = 'academic';
 var SUMMARY_EVERY = 10;
+var RT_STORAGE_KEY = 'labskill_rt_history';
+
+function rtKey() { return RT_STORAGE_KEY + ':' + rtSelected.map(function(s){return s.id;}).sort().join('-'); }
+function saveRtHistory() { if (rtSelected.length) localStorage.setItem(rtKey(), JSON.stringify(rtHistory.slice(-60))); }
+function loadRtHistory() {
+  if (!rtSelected.length) return [];
+  try { return JSON.parse(localStorage.getItem(rtKey()) || '[]'); } catch(e) { return []; }
+}
+
+function getRoleAssignments() {
+  var map = {};
+  var selects = document.querySelectorAll('.role-select');
+  selects.forEach(function(sel) { map[sel.dataset.id] = sel.value; });
+  return map;
+}
+
+function updateRolesAssign() {
+  var el = document.getElementById('roles-assign');
+  if (discussMode !== 'roles' || rtSelected.length < 2) { el.style.display = 'none'; return; }
+  var roleOptions = ['theorist','methodologist','critic','synthesizer'];
+  el.style.display = 'block';
+  el.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">Assign roles</div>' +
+    rtSelected.map(function(s, i) {
+      var opts = roleOptions.map(function(r) {
+        return '<option value="' + r + '"' + (i % 4 === roleOptions.indexOf(r) ? ' selected' : '') + '>' + r + '</option>';
+      }).join('');
+      return '<div class="roles-row"><span style="width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + s.name.split(' ')[0] + '</span><select class="role-select" data-id="' + s.id + '">' + opts + '</select></div>';
+    }).join('');
+}
+
+function exportRoundtable() {
+  if (!rtHistory.length) return;
+  var piNames = rtSelected.map(function(s){return s.name;}).join(', ');
+  var text = 'LabSkill Roundtable
+Participants: ' + piNames + '
+Mode: ' + discussMode + '
+Date: ' + new Date().toLocaleDateString() + '
+
+' +
+    rtHistory.map(function(h) {
+      return (h.role === 'user' ? 'QUESTION' : h.role.toUpperCase()) + ':
+' + h.content + '
+';
+    }).join('
+---
+
+');
+  var blob = new Blob([text], {type:'text/plain'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'roundtable-' + new Date().toISOString().slice(0,10) + '.txt';
+  a.click();
+}
 
 // ── KEY MANAGEMENT ────────────────────────────────────────
 function updateKeyBtn() {
@@ -499,6 +563,9 @@ function setDiscussMode(m) {
   ['academic', 'adversarial', 'roles', 'review', 'socratic'].forEach(function(x) {
     document.getElementById('dm-' + x).classList.toggle('active', x === m);
   });
+  updateRolesAssign();
+  // Keep history when switching modes - just re-render
+  if (rtHistory.length) renderRtHistory();
 }
 
 function updateRtControls() {
@@ -511,6 +578,27 @@ function updateRtControls() {
 function removeRtSkill(id) {
   rtSelected = rtSelected.filter(function(s) { return s.id !== id; });
   updateRtControls(); renderSidebar();
+}
+
+function renderRtHistory() {
+  var msgEl = document.getElementById('rt-messages');
+  msgEl.innerHTML = '';
+  var qNum = 0;
+  rtHistory.forEach(function(h) {
+    if (h.role === 'user') {
+      qNum++;
+      var qDiv = document.createElement('div');
+      qDiv.style.cssText = 'font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px 0 14px;border-bottom:1px solid var(--border);margin-bottom:14px;';
+      qDiv.innerHTML = '<span style="color:var(--accent);font-weight:500;">Q' + qNum + '</span>  ' + escHtml(h.content);
+      msgEl.appendChild(qDiv);
+    } else {
+      var div = document.createElement('div');
+      div.className = 'rt-msg';
+      div.innerHTML = '<div class="rt-speaker">' + escHtml(h.role.toUpperCase()) + '</div><div class="rt-body">' + marked.parse(h.content) + '</div>';
+      msgEl.appendChild(div);
+    }
+  });
+  msgEl.scrollTop = msgEl.scrollHeight;
 }
 
 async function sendRoundtable() {
@@ -529,12 +617,12 @@ async function sendRoundtable() {
   var emptyEl = msgEl.querySelector('.chat-empty');
   if (emptyEl) emptyEl.remove();
 
-  if (!rtHistory.length) {
-    var topicDiv = document.createElement('div');
-    topicDiv.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--muted);padding:0 0 16px;border-bottom:1px solid var(--border);margin-bottom:16px;';
-    topicDiv.textContent = 'Topic: ' + text;
-    msgEl.appendChild(topicDiv);
-  }
+  // Always show user question
+  var qNum = rtHistory.filter(function(h){return h.role==='user';}).length + 1;
+  var qDiv = document.createElement('div');
+  qDiv.style.cssText = 'font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px 0 14px;border-bottom:1px solid var(--border);margin-bottom:14px;';
+  qDiv.innerHTML = '<span style="color:var(--accent);font-weight:500;">Q' + qNum + '</span>  ' + escHtml(text);
+  msgEl.appendChild(qDiv);
 
   rtHistory.push({ role: 'user', content: text });
   var transcript = rtHistory.slice(-6).map(function(h) { return h.role + ': ' + h.content; }).join('\n');
@@ -552,8 +640,8 @@ async function sendRoundtable() {
       sysPrompt = 'You are ' + skill.name + '. You must ' + stance + ' the proposition based on your research framework.\n\nProfile:\n' + (skill.skillContent || '').slice(0, 900) + '\n\nBe direct and specific. 80-120 words.';
       userMsg = 'Proposition: "' + text + '"';
     } else if (discussMode === 'roles') {
-      var roles = ['theorist', 'methodologist', 'critic', 'synthesizer'];
-      var myRole = roles[i % roles.length];
+      var roleMap = getRoleAssignments();
+      var myRole = roleMap[skill.id] || ['theorist','methodologist','critic','synthesizer'][i % 4];
       sysPrompt = 'You are ' + skill.name + ', playing the role of ' + myRole + ' in a structured discussion.\n\nProfile:\n' + (skill.skillContent || '').slice(0, 900) + '\n\nRespond strictly from your ' + myRole + ' role. 80-120 words.';
       userMsg = 'Topic: "' + text + '"' + (transcript ? '\n\nDiscussion so far:\n' + transcript : '');
     } else if (discussMode === 'review') {
@@ -574,6 +662,7 @@ async function sendRoundtable() {
       var reply = await callClaude([{ role: 'user', content: userMsg }], sysPrompt, 400, false);
       loadDiv.querySelector('.rt-body').innerHTML = marked.parse(reply);
       rtHistory.push({ role: skill.name, content: reply });
+      saveRtHistory();
     } catch(e) {
       loadDiv.querySelector('.rt-body').textContent = 'Error: ' + e.message;
     }
@@ -584,11 +673,32 @@ async function sendRoundtable() {
 
 // ── MODE SWITCHING ────────────────────────────────────────
 function setMode(m) {
+  var prev = mode;
   mode = m;
   document.getElementById('tab-chat').classList.toggle('active', m === 'chat');
   document.getElementById('tab-rt').classList.toggle('active', m === 'roundtable');
   document.getElementById('mode-chat').style.display = m === 'chat' ? 'flex' : 'none';
   document.getElementById('mode-roundtable').style.display = m === 'roundtable' ? 'flex' : 'none';
+
+  if (m === 'roundtable') {
+    // Carry over selected skill from chat as first RT participant
+    if (prev === 'chat' && selectedSkill && !rtSelected.find(function(r){return r.id===selectedSkill.id;})) {
+      if (rtSelected.length < 4) {
+        rtSelected.push(selectedSkill);
+        updateRtControls();
+        var badge = document.getElementById('carry-badge');
+        badge.textContent = selectedSkill.name + ' carried over from Chat';
+        badge.style.display = 'inline';
+        setTimeout(function(){ badge.style.display='none'; }, 3000);
+      }
+    }
+    // Load saved rt history
+    if (rtSelected.length) {
+      rtHistory = loadRtHistory();
+      if (rtHistory.length) renderRtHistory();
+    }
+    updateRolesAssign();
+  }
   renderSidebar();
 }
 
