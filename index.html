@@ -497,19 +497,13 @@ function requireKey() {
 
 async function callClaude(messages, opts) {
   opts = opts || {};
-  var body = { model: 'claude-sonnet-4-20250514', max_tokens: opts.maxTokens || 2000, messages: messages };
+  var body = { max_tokens: opts.maxTokens || 2000, messages: messages };
   if (opts.webSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
-  var res;
-  if (usingFree && !apiKey) {
-    res = await fetch(PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (res.ok) { incFree(); if (freeLeft() === 0) { usingFree = false; updateBtn(); } }
-  } else {
-    res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify(body)
-    });
-  }
+  // Always route through Cloudflare Worker to handle CORS
+  var headers = { 'Content-Type': 'application/json' };
+  if (apiKey) headers['X-User-Key'] = apiKey;
+  else { incFree(); if (freeLeft() === 0) { usingFree = false; updateBtn(); } }
+  var res = await fetch(PROXY_URL, { method: 'POST', headers: headers, body: JSON.stringify(body) });
   if (!res.ok) {
     var e = await res.json().catch(function() { return {}; });
     throw new Error((e.error && e.error.message) || 'API error ' + res.status);
