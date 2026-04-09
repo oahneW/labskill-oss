@@ -530,7 +530,7 @@ function quickDistill(name, inst) {
 
 function quickSearch(term) {
   document.getElementById('disc-in').value = term;
-  discoverLabs();
+  document.getElementById('disc-in').focus();
 }
 
 async function discoverLabs() {
@@ -544,12 +544,24 @@ async function discoverLabs() {
   status.textContent = 'Searching...';
   results.innerHTML = '<div class="sk-grid">' + Array(6).fill('<div class="sk-card"><div class="sk-line w35"></div><div class="sk-line w70" style="height:16px;margin-bottom:5px"></div><div class="sk-line w50"></div></div>').join('') + '</div>';
   try {
-    var prompt = 'Find the top 12 most influential researchers in: "' + field + '". Use web search to find real data. Return ONLY a valid JSON array with no markdown:\n[{"name":"Full Name","institution":"University","country":"Country","hIndex":45,"citations":12000,"tags":["tag1","tag2","tag3"]}]\nSort by impact. Return exactly 12.';
+    var prompt = 'Find the top 12 most influential researchers in: "' + field + '". Use web search. IMPORTANT: Your entire response must be ONLY a JSON array starting with [ and ending with ]. No text before or after. No markdown. No explanation. Format:\n[{"name":"Full Name","institution":"University","country":"Country","hIndex":45,"citations":12000,"tags":["tag1","tag2","tag3"]}]\nReturn exactly 12 researchers sorted by impact.';
     var text = await callClaude([{ role: 'user', content: prompt }], { webSearch: true, maxTokens: 1500 });
     var clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
     var s = clean.indexOf('['); var e2 = clean.lastIndexOf(']');
-    if (s === -1 || e2 === -1) throw new Error('Could not parse results');
-    var rs = JSON.parse(clean.slice(s, e2 + 1));
+    if (s === -1 || e2 === -1) {
+      // Try to find JSON object array another way
+      var objMatch = clean.match(/\[[\s\S]*?\]/);
+      if (!objMatch) throw new Error('Could not parse results — try again');
+      clean = objMatch[0];
+      s = 0; e2 = clean.length - 1;
+    }
+    var rs;
+    try { rs = JSON.parse(clean.slice(s, e2 + 1)); }
+    catch(pe) {
+      // Try to extract just valid JSON
+      var jsonStr = clean.slice(s, e2 + 1).replace(/[ --]/g, ' ');
+      rs = JSON.parse(jsonStr);
+    }
     status.textContent = 'Found ' + rs.length + ' top researchers in "' + field + '"';
     results.innerHTML = '<div class="lgrid">' + rs.map(function(r, i) {
       var tags = (r.tags || []).map(function(t) { return '<span class="ltag">' + t + '</span>'; }).join('');
