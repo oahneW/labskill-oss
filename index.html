@@ -4,1087 +4,853 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LabSkill — Distill Elite Research Minds</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#0d0d0d;--cream:#f5f0e8;--muted:#6b6560;--accent:#c8502a;--border:rgba(13,13,13,0.12);--mono:'JetBrains Mono',monospace;--serif:'Instrument Serif',serif;--sans:'Inter',sans-serif;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weight:400;line-height:1.65;min-height:100vh;-webkit-font-smoothing:antialiased;}
-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 48px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(245,240,232,0.95);backdrop-filter:blur(12px);}
-.nav-logo{font-family:var(--mono);font-size:15px;font-weight:500;}
-.nav-logo span{color:var(--accent);}
-.nav-links{display:flex;gap:24px;font-size:13px;color:var(--muted);align-items:center;}
-.nav-links a{text-decoration:none;color:inherit;transition:color .2s;}
-.nav-links a:hover{color:var(--ink);}
-.api-indicator{font-family:var(--mono);font-size:11px;padding:5px 12px;border:1px solid var(--border);cursor:pointer;transition:all .15s;}
-.api-indicator.set{border-color:#2e7d32;color:#2e7d32;}
-.api-indicator.unset{border-color:var(--accent);color:var(--accent);}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 48px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(245,240,232,0.96);backdrop-filter:blur(12px);}
+.logo{font-family:var(--mono);font-size:14px;font-weight:500;}.logo span{color:var(--accent);}
+.nav-r{display:flex;gap:24px;font-size:13px;color:var(--muted);align-items:center;}
+.nav-r a{text-decoration:none;color:inherit;transition:color .2s;}.nav-r a:hover{color:var(--ink);}
+.key-btn{font-family:var(--mono);font-size:11px;padding:5px 12px;border:1px solid var(--border);cursor:pointer;background:transparent;transition:all .15s;}
+.key-btn.set{border-color:#2e7d32;color:#2e7d32;}.key-btn.unset{border-color:var(--accent);color:var(--accent);}
 
-/* KEY MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;}
-.modal-overlay.open{display:flex;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
 .modal{background:var(--cream);border:1px solid var(--border);padding:32px;max-width:480px;width:90%;}
-.modal h3{font-family:var(--serif);font-size:24px;font-weight:400;margin-bottom:8px;}
-.modal p{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.7;}
-.modal input{width:100%;background:white;border:1px solid var(--border);font-family:var(--mono);font-size:13px;padding:12px 16px;color:var(--ink);outline:none;margin-bottom:12px;}
+.modal h3{font-family:var(--serif);font-size:22px;font-weight:400;margin-bottom:8px;}
+.modal p{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.7;}
+.modal input{width:100%;background:white;border:1px solid var(--border);font-family:var(--mono);font-size:13px;padding:11px 14px;color:var(--ink);outline:none;margin-bottom:12px;}
 .modal input:focus{border-color:var(--ink);}
-.modal-btns{display:flex;gap:10px;}
-.btn-primary{background:var(--ink);color:var(--cream);font-family:var(--sans);font-size:14px;font-weight:500;padding:11px 24px;border:none;cursor:pointer;flex:1;transition:opacity .2s;}
-.btn-primary:hover{opacity:.8;}
-.btn-secondary{background:transparent;color:var(--muted);font-family:var(--sans);font-size:14px;padding:11px 24px;border:1px solid var(--border);cursor:pointer;transition:all .15s;}
-.btn-secondary:hover{color:var(--ink);}
-.modal-note{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:12px;line-height:1.6;}
+.mbtns{display:flex;gap:10px;}
+.bp{background:var(--ink);color:var(--cream);font-family:var(--sans);font-size:14px;font-weight:500;padding:10px 22px;border:none;cursor:pointer;flex:1;transition:opacity .2s;}.bp:hover{opacity:.8;}
+.bs{background:transparent;color:var(--muted);font-family:var(--sans);font-size:14px;padding:10px 22px;border:1px solid var(--border);cursor:pointer;}.bs:hover{color:var(--ink);}
+.mnote{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:10px;line-height:1.6;}
 
 .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:120px 48px 80px;max-width:1100px;margin:0 auto;}
 .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--accent);text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;gap:10px;}
 .eyebrow::before{content:'';display:block;width:32px;height:1px;background:var(--accent);}
-h1{font-family:var(--serif);font-size:clamp(48px,7vw,96px);font-weight:400;line-height:1.05;letter-spacing:-.02em;max-width:800px;margin-bottom:32px;}
+h1{font-family:var(--serif);font-size:clamp(44px,7vw,88px);font-weight:400;line-height:1.05;letter-spacing:-.02em;max-width:800px;margin-bottom:28px;}
 h1 em{font-style:italic;color:var(--accent);}
-.hero-sub{font-size:17px;color:var(--muted);max-width:520px;line-height:1.7;margin-bottom:48px;}
-.hero-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
-.btn-cta{background:var(--ink);color:var(--cream);font-family:var(--sans);font-size:14px;font-weight:500;padding:14px 32px;border:none;cursor:pointer;transition:opacity .2s;}
-.btn-cta:hover{opacity:.8;}
-.btn-ghost{background:transparent;color:var(--muted);font-family:var(--sans);font-size:14px;padding:14px 0;border:none;border-bottom:1px solid var(--border);cursor:pointer;transition:color .2s;}
-.btn-ghost:hover{color:var(--ink);}
-.hero-stats{display:flex;gap:48px;margin-top:80px;padding-top:40px;border-top:1px solid var(--border);}
-.stat-num{font-family:var(--serif);font-size:40px;line-height:1;}
-.stat-label{font-size:12px;color:var(--muted);margin-top:4px;font-family:var(--mono);}
-.section{padding:100px 48px;max-width:1100px;margin:0 auto;}
-.section-tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:16px;}
-h2{font-family:var(--serif);font-size:clamp(32px,4vw,52px);font-weight:400;line-height:1.1;letter-spacing:-.02em;margin-bottom:48px;}
-hr.divider{border:none;border-top:1px solid var(--border);margin:0 48px;}
+.hero-sub{font-size:16px;color:var(--muted);max-width:500px;line-height:1.7;margin-bottom:40px;}
+.hbtns{display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
+.bcta{background:var(--ink);color:var(--cream);font-family:var(--sans);font-size:14px;font-weight:500;padding:13px 28px;border:none;cursor:pointer;transition:opacity .2s;}.bcta:hover{opacity:.8;}
+.bghost{background:transparent;color:var(--muted);font-family:var(--sans);font-size:14px;padding:13px 0;border:none;border-bottom:1px solid var(--border);cursor:pointer;}
+.hstats{display:flex;gap:40px;margin-top:64px;padding-top:32px;border-top:1px solid var(--border);}
+.snum{font-family:var(--serif);font-size:36px;line-height:1;}.slbl{font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono);}
 
-/* DISCOVER */
-.discover-search{display:flex;gap:0;margin-bottom:16px;}
-.discover-input{flex:1;background:white;border:1px solid var(--border);border-right:none;font-family:var(--sans);font-size:15px;font-weight:300;padding:16px 20px;color:var(--ink);outline:none;transition:border-color .2s;}
-.discover-input:focus{border-color:var(--ink);}
-.discover-btn{background:var(--ink);color:var(--cream);font-family:var(--sans);font-size:14px;font-weight:500;padding:16px 28px;border:none;cursor:pointer;white-space:nowrap;transition:opacity .2s;}
-.discover-btn:hover:not(:disabled){opacity:.8;}
-.discover-btn:disabled{opacity:.4;cursor:not-allowed;}
-.field-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:40px;}
-.fchip{font-family:var(--mono);font-size:11px;padding:6px 14px;border:1px solid var(--border);cursor:pointer;background:white;color:var(--muted);transition:all .15s;}
-.fchip:hover{border-color:var(--ink);color:var(--ink);}
-.lab-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:16px;}
-.lab-card{background:var(--cream);padding:24px;cursor:pointer;transition:background .15s;position:relative;}
-.lab-card:hover{background:white;}
-.lab-card:hover .lab-distill{opacity:1;}
-.lab-rank{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:10px;}
-.lab-name{font-family:var(--serif);font-size:20px;font-weight:400;margin-bottom:2px;line-height:1.2;}
-.lab-inst{font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:12px;}
-.lab-stats{display:flex;gap:16px;margin-bottom:12px;}
-.lab-stat{font-family:var(--mono);font-size:11px;color:var(--muted);}
-.lab-stat strong{color:var(--ink);font-weight:500;}
-.lab-tags{display:flex;flex-wrap:wrap;gap:5px;}
-.lab-tag{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px solid var(--border);padding:2px 8px;}
-.lab-distill{position:absolute;bottom:16px;right:16px;background:var(--ink);color:var(--cream);font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:6px 12px;opacity:0;transition:opacity .15s;}
-.discover-status{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:24px;min-height:20px;}
-.skeleton-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);}
-.skel-card{background:var(--cream);padding:24px;}
-.skel-line{background:linear-gradient(90deg,#e8e3db 25%,#f5f0e8 50%,#e8e3db 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;height:12px;margin-bottom:10px;border-radius:2px;}
-.skel-line.wide{width:70%;}
-.skel-line.mid{width:50%;}
-.skel-line.short{width:35%;}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.sec{padding:80px 48px;max-width:1100px;margin:0 auto;}
+.stag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:14px;}
+h2{font-family:var(--serif);font-size:clamp(28px,4vw,48px);font-weight:400;line-height:1.1;letter-spacing:-.02em;margin-bottom:40px;}
+hr.dv{border:none;border-top:1px solid var(--border);margin:0 48px;}
 
-/* DISTILL */
-.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:48px;}
-.tab{font-family:var(--sans);font-size:14px;padding:14px 32px;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;}
+.qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:40px;}
+.qcard{background:white;border:1px solid var(--border);padding:18px 20px;cursor:pointer;transition:all .15s;position:relative;}
+.qcard:hover{border-color:var(--ink);}
+.qn{font-family:var(--serif);font-size:16px;margin-bottom:2px;}
+.qi{font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:8px;}
+.qd{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px;}
+.qtags{display:flex;flex-wrap:wrap;gap:4px;}
+.qtag{font-family:var(--mono);font-size:9px;color:var(--muted);border:1px solid var(--border);padding:2px 6px;}
+.qarr{position:absolute;bottom:14px;right:14px;font-family:var(--mono);font-size:10px;color:var(--accent);opacity:0;transition:opacity .15s;}
+.qcard:hover .qarr{opacity:1;}
+
+.srow{display:flex;gap:0;margin-bottom:14px;}
+.si{flex:1;background:white;border:1px solid var(--border);border-right:none;font-family:var(--sans);font-size:14px;padding:14px 18px;color:var(--ink);outline:none;}
+.si:focus{border-color:var(--ink);}
+.sbtn{background:var(--ink);color:var(--cream);font-family:var(--sans);font-size:13px;font-weight:500;padding:14px 22px;border:none;cursor:pointer;white-space:nowrap;transition:opacity .2s;}
+.sbtn:disabled{opacity:.4;cursor:not-allowed;}.sbtn:not(:disabled):hover{opacity:.8;}
+.fchips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:32px;}
+.fc{font-family:var(--mono);font-size:11px;padding:5px 12px;border:1px solid var(--border);cursor:pointer;background:white;color:var(--muted);transition:all .15s;}
+.fc:hover{border-color:var(--ink);color:var(--ink);}
+.dstatus{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:20px;min-height:18px;}
+
+.lgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);}
+.lcard{background:var(--cream);padding:22px;cursor:pointer;transition:background .15s;position:relative;}
+.lcard:hover{background:white;}.lcard:hover .lcta{opacity:1;}
+.lrank{font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:8px;}
+.lname{font-family:var(--serif);font-size:18px;margin-bottom:2px;}
+.linst{font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:10px;}
+.lmeta{display:flex;gap:14px;margin-bottom:10px;}
+.lstat{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.lstat b{color:var(--ink);font-weight:500;}
+.ltags{display:flex;flex-wrap:wrap;gap:4px;}
+.ltag{font-family:var(--mono);font-size:9px;color:var(--muted);border:1px solid var(--border);padding:2px 6px;}
+.lcta{position:absolute;bottom:14px;right:14px;font-family:var(--mono);font-size:10px;color:var(--accent);opacity:0;transition:opacity .15s;}
+.sk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);}
+.sk-card{background:var(--cream);padding:22px;}
+.sk-line{background:linear-gradient(90deg,#e8e3db 25%,#f0ebe3 50%,#e8e3db 75%);background-size:200% 100%;animation:sh 1.4s infinite;height:11px;margin-bottom:9px;border-radius:2px;}
+.sk-line.w70{width:70%;}.sk-line.w50{width:50%;}.sk-line.w35{width:35%;}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:40px;}
+.tab{font-family:var(--sans);font-size:14px;padding:12px 28px;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;}
 .tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:500;}
-.tab-badge{display:inline-block;background:var(--accent);color:white;font-family:var(--mono);font-size:9px;padding:2px 6px;margin-left:8px;vertical-align:middle;}
-.panel{display:none;}
-.panel.active{display:block;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;}
-.field{display:flex;flex-direction:column;gap:8px;}
-.field label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
-.field input,.field textarea{background:white;border:1px solid var(--border);font-family:var(--sans);font-size:14px;font-weight:300;padding:12px 16px;color:var(--ink);outline:none;transition:border-color .2s;width:100%;}
-.field input:focus,.field textarea:focus{border-color:var(--ink);}
-.chip-row{display:flex;flex-wrap:wrap;gap:8px;}
-.chip{font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:6px 14px;border:1px solid var(--border);cursor:pointer;background:white;color:var(--muted);transition:all .15s;user-select:none;}
+.tbadge{display:inline-block;background:var(--accent);color:white;font-family:var(--mono);font-size:8px;padding:2px 5px;margin-left:7px;vertical-align:middle;}
+.panel{display:none;}.panel.active{display:block;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.fld{display:flex;flex-direction:column;gap:7px;}
+.fld label{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
+.fld input{background:white;border:1px solid var(--border);font-family:var(--sans);font-size:14px;padding:11px 14px;color:var(--ink);outline:none;width:100%;}
+.fld input:focus{border-color:var(--ink);}
+.chips{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{font-family:var(--mono);font-size:11px;padding:5px 12px;border:1px solid var(--border);cursor:pointer;background:white;color:var(--muted);transition:all .15s;}
 .chip.on{background:var(--ink);color:var(--cream);border-color:var(--ink);}
-.prefilled-banner{background:#f0f7ff;border:1px solid #b3d4f5;padding:12px 16px;margin-bottom:24px;font-family:var(--mono);font-size:12px;color:#1a5fa8;display:none;}
+.pbanner{background:#e8f0fe;border:1px solid #b3d4f5;padding:10px 14px;margin-bottom:18px;font-family:var(--mono);font-size:11px;color:#1a5fa8;display:none;}
 
-/* AUTHOR SEARCH */
-.author-card{background:white;border:1px solid var(--border);padding:18px 20px;cursor:pointer;transition:border-color .15s;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.author-card:hover{border-color:var(--ink);}
-.author-name{font-family:var(--serif);font-size:18px;font-weight:400;margin-bottom:2px;}
-.author-aff{font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:6px;}
-.author-meta{display:flex;gap:20px;}
-.author-meta span{font-family:var(--mono);font-size:11px;color:var(--muted);}
-.author-meta strong{color:var(--ink);font-weight:500;}
-.author-select-btn{font-family:var(--mono);font-size:11px;padding:8px 16px;border:1px solid var(--border);background:transparent;cursor:pointer;white-space:nowrap;transition:all .15s;}
-.author-select-btn:hover{background:var(--ink);color:var(--cream);border-color:var(--ink);}
-.author-selected-bar{background:white;border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
-.author-selected-bar .name{font-family:var(--serif);font-size:17px;}
-.author-selected-bar .change{font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;}
-.papers-stats{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border);}
-.pstat{flex:1;padding:14px 16px;border-right:1px solid var(--border);text-align:center;}
-.pstat:last-child{border-right:none;}
-.pstat-num{font-family:var(--serif);font-size:24px;line-height:1;margin-bottom:4px;}
-.pstat-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em;}
-.pstat-label.green{color:#2e7d32;}
-.papers-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px;}
-.papers-table th{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);}
-.papers-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.4;}
-.papers-table tr:hover td{background:white;}
-.abs-badge{font-family:var(--mono);font-size:9px;background:#f5f5f5;color:var(--muted);border:1px solid var(--border);padding:2px 6px;}
-.show-more{font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-top:8px;display:inline-block;}
-.confidence-bar{background:white;border:1px solid var(--border);border-left:3px solid var(--accent);padding:16px 20px;margin-top:16px;margin-bottom:16px;display:none;}
-.confidence-title{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
-.confidence-items{display:flex;gap:16px;flex-wrap:wrap;}
-.conf-item{font-family:var(--mono);font-size:11px;}
-.conf-item.found{color:#2e7d32;}
-.conf-item.missing{color:var(--muted);}
+.acard{background:white;border:1px solid var(--border);padding:16px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;transition:border-color .15s;}
+.acard:hover{border-color:var(--ink);}
+.aname{font-family:var(--serif);font-size:17px;margin-bottom:2px;}
+.aaff{font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:5px;}
+.ameta{display:flex;gap:16px;}
+.ameta span{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.ameta b{color:var(--ink);font-weight:500;}
+.abtn{font-family:var(--mono);font-size:10px;padding:7px 14px;border:1px solid var(--border);background:transparent;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.abtn:hover{background:var(--ink);color:var(--cream);border-color:var(--ink);}
 
-.run-row{display:flex;align-items:center;gap:20px;margin-top:32px;}
-.btn-run{background:var(--ink);color:var(--cream);font-family:var(--sans);font-size:14px;font-weight:500;padding:13px 40px;border:none;cursor:pointer;transition:opacity .2s;}
-.btn-run:disabled{opacity:.3;cursor:not-allowed;}
-.btn-run:not(:disabled):hover{opacity:.8;}
-.status-msg{font-family:var(--mono);font-size:12px;color:var(--muted);}
-.progress-wrap{margin:40px 0;display:none;}
-.progress-steps{display:flex;}
-.p-step{flex:1;padding:14px 16px;border:1px solid var(--border);border-right:none;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--muted);background:white;transition:all .3s;display:flex;align-items:center;gap:8px;}
-.p-step:last-child{border-right:1px solid var(--border);}
-.p-step.active{background:var(--ink);color:var(--cream);border-color:var(--ink);}
-.p-step.done{background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7;}
-.p-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
-.p-step.active .p-dot{animation:blink 1s infinite;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-.output-wrap{display:none;margin-top:40px;}
-.output-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:var(--ink);color:var(--cream);}
-.output-title{font-family:var(--mono);font-size:12px;letter-spacing:.08em;}
-.output-actions{display:flex;gap:10px;}
-.btn-out{font-family:var(--mono);font-size:11px;letter-spacing:.06em;padding:7px 14px;border:1px solid rgba(245,240,232,.3);background:transparent;color:var(--cream);cursor:pointer;transition:background .15s;}
-.btn-out:hover{background:rgba(255,255,255,.1);}
-.btn-out.accent{background:var(--accent);border-color:var(--accent);}
-.output-body{background:white;border:1px solid var(--border);border-top:none;padding:32px;max-height:560px;overflow-y:auto;}
-.output-body .md-render h1,.output-body .md-render h2,.output-body .md-render h3{font-family:var(--serif);font-weight:400;margin:16px 0 8px;}
-.output-body .md-render h1{font-size:22px;}
-.output-body .md-render h2{font-size:18px;}
-.output-body .md-render h3{font-size:16px;}
-.output-body .md-render p{margin-bottom:12px;font-size:14px;line-height:1.7;}
-.output-body .md-render ul,.output-body .md-render ol{margin:8px 0 12px 20px;font-size:14px;line-height:1.7;}
-.output-body .md-render code{font-family:var(--mono);font-size:12px;background:#f5f5f5;padding:2px 6px;}
-.output-body .md-render pre{background:#f5f5f5;padding:16px;margin-bottom:12px;overflow-x:auto;}
-.output-body .md-render pre code{background:none;padding:0;}
-.output-body .md-render strong{font-weight:500;}
-.output-body .md-render table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:13px;}
-.output-body .md-render th{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;border-bottom:2px solid var(--border);text-align:left;}
-.output-body .md-render td{padding:8px 12px;border-bottom:1px solid var(--border);}
-.output-body .md-render blockquote{border-left:3px solid var(--accent);padding:8px 16px;margin:12px 0;color:var(--muted);}
+.selbar{background:white;border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px 18px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;}
+.selname{font-family:var(--serif);font-size:16px;}
+.chg{font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer;text-decoration:underline;}
 
-.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:48px;}
-.quick-card{background:white;border:1px solid var(--border);padding:20px 22px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
-.quick-card:hover{border-color:var(--ink);transform:translateY(-1px);}
-.quick-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);opacity:0;transition:opacity .15s;}
-.quick-card:hover::before{opacity:1;}
-.quick-name{font-family:var(--serif);font-size:17px;font-weight:400;margin-bottom:2px;}
-.quick-inst{font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:10px;}
-.quick-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px;}
-.quick-tags{display:flex;flex-wrap:wrap;gap:5px;}
-.quick-tag{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px solid var(--border);padding:2px 7px;}
-.quick-arrow{position:absolute;bottom:16px;right:16px;font-family:var(--mono);font-size:11px;color:var(--muted);opacity:0;transition:opacity .15s;}
-.quick-card:hover .quick-arrow{opacity:1;}
-.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;}
-.how-card{padding:32px 0;border-top:2px solid var(--ink);}
-.how-num{font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:16px;}
-.how-card h3{font-family:var(--serif);font-size:22px;font-weight:400;margin-bottom:12px;}
-.how-card p{font-size:14px;color:var(--muted);line-height:1.7;}
-footer{border-top:1px solid var(--border);padding:40px 48px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--muted);font-family:var(--mono);}
-footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--border);}
-footer a:hover{color:var(--ink);}
+/* source progress bar */
+.src-progress{margin-bottom:18px;}
+.src-row{display:flex;align-items:center;gap:10px;padding:6px 0;font-family:var(--mono);font-size:11px;border-bottom:1px solid var(--border);}
+.src-row:last-child{border-bottom:none;}
+.src-icon{width:16px;text-align:center;flex-shrink:0;}
+.src-name{color:var(--muted);width:160px;flex-shrink:0;}
+.src-result{color:var(--ink);flex:1;}
+.src-status{width:60px;text-align:right;flex-shrink:0;}
+.src-status.ok{color:#2e7d32;}.src-status.skip{color:var(--muted);}.src-status.loading{color:var(--accent);}
 
-.arxiv-badge{font-family:var(--mono);font-size:9px;background:#e8f0fe;color:#1a5fa8;border:1px solid #b3d4f5;padding:2px 6px;}
-.paste-section{margin-top:24px;padding:20px 24px;background:white;border:1px solid var(--border);border-left:3px solid var(--accent);}
-.paste-title{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
-.paste-sub{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6;}
-.paste-area{width:100%;background:var(--cream);border:1px solid var(--border);font-family:var(--sans);font-size:13px;font-weight:300;padding:12px 14px;color:var(--ink);outline:none;resize:vertical;min-height:80px;line-height:1.6;transition:border-color .2s;}
+.pstats{display:flex;gap:0;margin-bottom:18px;border:1px solid var(--border);}
+.pstat{flex:1;padding:12px 14px;border-right:1px solid var(--border);text-align:center;}.pstat:last-child{border-right:none;}
+.pstat-n{font-family:var(--serif);font-size:22px;line-height:1;margin-bottom:3px;}
+.pstat-l{font-family:var(--mono);font-size:9px;color:var(--muted);}
+.pstat-l.g{color:#2e7d32;}
+.ptable{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:7px;}
+.ptable th{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);}
+.ptable td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+.ptable tr:hover td{background:white;}
+.sbadge{font-family:var(--mono);font-size:8px;background:#f5f5f5;color:var(--muted);border:1px solid var(--border);padding:2px 5px;}
+.sbadge.bx{background:#e8f0fe;color:#1a5fa8;border-color:#b3d4f5;}
+.sbadge.pm{background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7;}
+.paste-box{margin-top:16px;padding:14px 16px;background:white;border:1px solid var(--border);border-left:3px solid var(--accent);}
+.paste-title{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.paste-sub{font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.5;}
+.paste-area{width:100%;background:var(--cream);border:1px solid var(--border);font-family:var(--sans);font-size:13px;padding:10px 12px;color:var(--ink);outline:none;resize:vertical;min-height:60px;line-height:1.6;}
 .paste-area:focus{border-color:var(--ink);}
-.quality-report{margin-top:24px;display:none;}
-.qr-header{background:var(--ink);color:var(--cream);padding:12px 20px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;display:flex;justify-content:space-between;align-items:center;}
-.qr-score{font-family:var(--serif);font-size:20px;}
-.qr-body{background:white;border:1px solid var(--border);border-top:none;padding:20px;}
-.qr-test{padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:start;}
-.qr-test:last-child{border-bottom:none;}
-.qr-status{font-family:var(--mono);font-size:12px;width:20px;flex-shrink:0;margin-top:2px;}
-.qr-test-name{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:3px;}
-.qr-test-result{font-size:13px;line-height:1.5;}
+
+.runrow{display:flex;align-items:center;gap:16px;margin-top:24px;}
+.brun{background:var(--ink);color:var(--cream);font-family:var(--sans);font-size:14px;font-weight:500;padding:12px 36px;border:none;cursor:pointer;transition:opacity .2s;}
+.brun:disabled{opacity:.3;cursor:not-allowed;}.brun:not(:disabled):hover{opacity:.8;}
+.rmsg{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.prog{margin:32px 0;display:none;}
+.psteps{display:flex;}
+.pstep{flex:1;padding:12px 14px;border:1px solid var(--border);border-right:none;font-family:var(--mono);font-size:10px;color:var(--muted);background:white;transition:all .3s;display:flex;align-items:center;gap:7px;}
+.pstep:last-child{border-right:1px solid var(--border);}
+.pstep.active{background:var(--ink);color:var(--cream);border-color:var(--ink);}
+.pstep.done{background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7;}
+.pdot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.pstep.active .pdot{animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.owrap{display:none;margin-top:32px;}
+.ohead{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--ink);color:var(--cream);}
+.otitle{font-family:var(--mono);font-size:11px;letter-spacing:.07em;}
+.oactions{display:flex;gap:8px;}
+.obtn{font-family:var(--mono);font-size:10px;padding:6px 12px;border:1px solid rgba(245,240,232,.3);background:transparent;color:var(--cream);cursor:pointer;transition:background .15s;}
+.obtn:hover{background:rgba(255,255,255,.1);}.obtn.hi{background:var(--accent);border-color:var(--accent);}
+.obody{background:white;border:1px solid var(--border);border-top:none;padding:28px;max-height:520px;overflow-y:auto;}
+.md h1,.md h2,.md h3{font-family:var(--serif);font-weight:400;margin:14px 0 6px;}
+.md h1{font-size:20px;}.md h2{font-size:17px;}.md h3{font-size:15px;}
+.md p{margin-bottom:10px;font-size:14px;line-height:1.7;}
+.md ul,.md ol{margin:6px 0 10px 18px;font-size:14px;line-height:1.7;}
+.md strong{font-weight:600;}
+.md code{font-family:var(--mono);font-size:11px;background:#f5f5f5;padding:1px 5px;}
+.md table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;}
+.md th{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;padding:7px 10px;border-bottom:2px solid var(--border);text-align:left;}
+.md td{padding:7px 10px;border-bottom:1px solid var(--border);}
+.md blockquote{border-left:3px solid var(--accent);padding:6px 14px;margin:10px 0;color:var(--muted);}
+
+.howgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;}
+.howcard{padding:28px 0;border-top:2px solid var(--ink);}
+.hownum{font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:14px;}
+.howcard h3{font-family:var(--serif);font-size:20px;font-weight:400;margin-bottom:10px;}
+.howcard p{font-size:13px;color:var(--muted);line-height:1.7;}
+footer{border-top:1px solid var(--border);padding:32px 48px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);font-family:var(--mono);}
+footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--border);}
+
 @media(max-width:768px){
-  nav,footer{padding:16px 24px;}
-  .hero,.section{padding-left:24px;padding-right:24px;}
-  h1{font-size:42px;}
-  .form-row,.lab-grid,.how-grid,.skeleton-grid{grid-template-columns:1fr;}
-  .discover-search{flex-direction:column;}
-  .discover-input{border-right:1px solid var(--border);border-bottom:none;}
-  .hero-stats{gap:24px;}
-  .progress-steps{flex-direction:column;}
-  .p-step{border-right:1px solid var(--border);border-bottom:none;}
-  .p-step:last-child{border-bottom:1px solid var(--border);}
+  nav,footer{padding:14px 20px;}
+  .hero,.sec{padding-left:20px;padding-right:20px;}
+  h1{font-size:40px;}
+  .frow,.qgrid,.lgrid,.howgrid,.sk-grid{grid-template-columns:1fr;}
+  .srow{flex-direction:column;}.si{border-right:1px solid var(--border);border-bottom:none;}
+  .hstats{gap:20px;}
+  .psteps{flex-direction:column;}
+  .pstep{border-right:1px solid var(--border);border-bottom:none;}
+  .pstep:last-child{border-bottom:1px solid var(--border);}
 }
 </style>
 </head>
 <body>
 
-<!-- KEY MODAL -->
-<div class="modal-overlay" id="key-modal">
+<div class="overlay" id="modal">
   <div class="modal">
-    <h3 id="modal-title">Welcome to LabSkill</h3>
-    <div id="modal-free" style="display:block;">
-      <p>You have <strong id="free-count-display">3</strong> free distillations remaining. After that, bring your own Anthropic API key to continue.</p>
-      <div class="modal-btns">
-        <button class="btn-primary" onclick="useFree()">Use free quota →</button>
-        <button class="btn-secondary" onclick="showKeyInput()">Use my own key</button>
+    <h3 id="mh">Welcome to LabSkill</h3>
+    <div id="mfree">
+      <p>You have <b id="fleft">3</b> free distillations. After that, bring your own Anthropic API key.</p>
+      <div class="mbtns">
+        <button class="bp" onclick="useFree()">Use free quota</button>
+        <button class="bs" onclick="showKey()">Use my own key</button>
       </div>
     </div>
-    <div id="modal-key-input" style="display:none;">
-      <p>Enter your Anthropic API key. It stays in your browser session only — never sent to any server.</p>
-      <input type="password" id="key-input" placeholder="sk-ant-..." />
-      <div class="modal-btns">
-        <button class="btn-primary" onclick="saveKey()">Save & Continue</button>
-        <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+    <div id="mkey" style="display:none;">
+      <p>Your key stays in your browser session only — never sent to any server.</p>
+      <input type="password" id="kin" placeholder="sk-ant-..." />
+      <div class="mbtns">
+        <button class="bp" onclick="saveKey()">Save and continue</button>
+        <button class="bs" onclick="closeModal()">Cancel</button>
       </div>
-      <div class="modal-note">Get a key at console.anthropic.com — ~$0.05 per distillation.</div>
+      <div class="mnote">Get a key at console.anthropic.com — about $0.05 per distillation</div>
     </div>
   </div>
 </div>
 
 <nav>
-  <div class="nav-logo">Lab<span>Skill</span></div>
-  <div class="nav-links">
+  <div class="logo">Lab<span>Skill</span></div>
+  <div class="nav-r">
     <a href="#examples">Examples</a>
     <a href="#discover">Discover</a>
     <a href="#distill">Distill</a>
-    <a href="chat.html">Chat & Roundtable</a>
-    <span class="api-indicator unset" id="api-indicator" onclick="openModal()">Set API Key</span>
+    <a href="chat.html">Chat</a>
+    <button class="key-btn unset" id="kbtn" onclick="openModal()">Set API Key</button>
   </div>
 </nav>
 
 <div class="hero">
-  <div class="eyebrow">Academic Intelligence · Open Source</div>
+  <div class="eyebrow">Academic Intelligence — Open Source</div>
   <h1>Distill the mind of <em>elite researchers</em></h1>
-  <p class="hero-sub">Find top labs in any field. Distill any researcher's publications and public work into a reusable persona — then have real intellectual conversations with them.</p>
-  <div class="hero-actions">
-    <button class="btn-cta" onclick="document.getElementById('discover').scrollIntoView({behavior:'smooth'})">Discover top labs →</button>
-    <button class="btn-ghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">How it works</button>
+  <p class="hero-sub">Find top labs in any field. Distill any researcher's publications and public work into a reusable Skill — then have real intellectual conversations grounded in live literature search.</p>
+  <div class="hbtns">
+    <button class="bcta" onclick="document.getElementById('examples').scrollIntoView({behavior:'smooth'})">Try an example</button>
+    <button class="bghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">How it works</button>
   </div>
-  <div class="hero-stats">
-    <div><div class="stat-num">Free</div><div class="stat-label">Open source</div></div>
-    <div><div class="stat-num">BYOK</div><div class="stat-label">Your API key</div></div>
-    <div><div class="stat-num">~$0.05</div><div class="stat-label">Per distillation</div></div>
+  <div class="hstats">
+    <div><div class="snum">Free</div><div class="slbl">Open source</div></div>
+    <div><div class="snum">3</div><div class="slbl">Free distillations</div></div>
+    <div><div class="snum">Live</div><div class="slbl">Literature search</div></div>
   </div>
 </div>
 
-<hr class="divider">
+<hr class="dv">
 
-<div class="section" id="discover">
-  <div class="section-tag">// step 1</div>
+<div class="sec" id="examples">
+  <div class="stag">// quick start — click to distill</div>
+  <h2>Featured researchers</h2>
+  <div class="qgrid">
+    <div class="qcard" onclick="quickDistill('Alan Sanfey','Radboud University')">
+      <div class="qn">Alan Sanfey</div><div class="qi">Radboud University</div>
+      <div class="qd">Social decision neuroscience, fairness, the ultimatum game.</div>
+      <div class="qtags"><span class="qtag">social neuroscience</span><span class="qtag">fMRI</span><span class="qtag">decision-making</span></div>
+      <div class="qarr">Distill</div>
+    </div>
+    <div class="qcard" onclick="quickDistill('Molly Crockett','Princeton University')">
+      <div class="qn">Molly Crockett</div><div class="qi">Princeton University</div>
+      <div class="qd">Moral psychology, harm aversion, neurotransmitters and ethics.</div>
+      <div class="qtags"><span class="qtag">moral psychology</span><span class="qtag">harm aversion</span><span class="qtag">serotonin</span></div>
+      <div class="qarr">Distill</div>
+    </div>
+    <div class="qcard" onclick="quickDistill('Dana Small','Yale University')">
+      <div class="qn">Dana Small</div><div class="qi">Yale University</div>
+      <div class="qd">Gut-brain axis, taste perception, nutrition and cognition.</div>
+      <div class="qtags"><span class="qtag">nutrition and brain</span><span class="qtag">reward</span><span class="qtag">gut-brain</span></div>
+      <div class="qarr">Distill</div>
+    </div>
+    <div class="qcard" onclick="quickDistill('Jean Decety','University of Chicago')">
+      <div class="qn">Jean Decety</div><div class="qi">University of Chicago</div>
+      <div class="qd">Empathy, moral development, the neuroscience of altruism.</div>
+      <div class="qtags"><span class="qtag">empathy</span><span class="qtag">prosocial</span><span class="qtag">development</span></div>
+      <div class="qarr">Distill</div>
+    </div>
+    <div class="qcard" onclick="quickDistill('Matthew Rushworth','University of Oxford')">
+      <div class="qn">Matthew Rushworth</div><div class="qi">University of Oxford</div>
+      <div class="qd">Value-based decisions, prefrontal cortex, computational models.</div>
+      <div class="qtags"><span class="qtag">value decisions</span><span class="qtag">prefrontal</span><span class="qtag">TMS</span></div>
+      <div class="qarr">Distill</div>
+    </div>
+    <div class="qcard" onclick="quickDistill('Antonio Rangel','Caltech')">
+      <div class="qn">Antonio Rangel</div><div class="qi">Caltech</div>
+      <div class="qd">Neuroeconomics, food decisions, how the brain computes value.</div>
+      <div class="qtags"><span class="qtag">neuroeconomics</span><span class="qtag">food choice</span><span class="qtag">vmPFC</span></div>
+      <div class="qarr">Distill</div>
+    </div>
+  </div>
+</div>
+
+<hr class="dv">
+
+<div class="sec" id="discover">
+  <div class="stag">// step 1 — find top labs in any field</div>
   <h2>Discover top researchers</h2>
-  <div class="discover-search">
-    <input class="discover-input" id="field-input" type="text" placeholder="Enter a research field — e.g. moral decision-making neuroscience, nutrition and cognition..." />
-    <button class="discover-btn" id="discover-btn" onclick="discoverLabs()">Find top labs →</button>
+  <div class="srow">
+    <input class="si" id="disc-in" type="text" placeholder="Enter a research field — e.g. moral decision-making neuroscience..." />
+    <button class="sbtn" id="disc-btn" onclick="discoverLabs()">Find top labs</button>
   </div>
-  <div class="field-chips">
-    <span class="fchip" onclick="quickSearch('moral decision-making neuroscience')">Moral decision-making</span>
-    <span class="fchip" onclick="quickSearch('social neuroscience prosocial behavior')">Prosocial behavior</span>
-    <span class="fchip" onclick="quickSearch('nutrition cognition gut-brain axis')">Nutrition & cognition</span>
-    <span class="fchip" onclick="quickSearch('neuroeconomics value-based decision making')">Neuroeconomics</span>
-    <span class="fchip" onclick="quickSearch('empathy moral psychology')">Empathy & morality</span>
-    <span class="fchip" onclick="quickSearch('computational psychiatry')">Computational psychiatry</span>
-    <span class="fchip" onclick="quickSearch('cognitive control executive function')">Cognitive control</span>
-    <span class="fchip" onclick="quickSearch('social cognition theory of mind')">Social cognition</span>
+  <div class="fchips">
+    <span class="fc" onclick="quickSearch('moral decision-making neuroscience')">Moral decision-making</span>
+    <span class="fc" onclick="quickSearch('social neuroscience prosocial behavior')">Prosocial behavior</span>
+    <span class="fc" onclick="quickSearch('nutrition cognition gut-brain axis')">Nutrition and cognition</span>
+    <span class="fc" onclick="quickSearch('neuroeconomics value-based decision making')">Neuroeconomics</span>
+    <span class="fc" onclick="quickSearch('empathy moral psychology')">Empathy and morality</span>
+    <span class="fc" onclick="quickSearch('computational psychiatry')">Computational psychiatry</span>
   </div>
-  <div class="discover-status" id="discover-status"></div>
+  <div class="dstatus" id="dstatus"></div>
   <div id="lab-results"></div>
 </div>
 
-<hr class="divider">
+<hr class="dv">
 
-<div class="section" id="distill">
-  <div class="section-tag">// step 2</div>
+<div class="sec" id="distill">
+  <div class="stag">// step 2 — distill their research mind</div>
   <h2>Distill a researcher</h2>
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('lab')">By Researcher <span class="tab-badge">PRIMARY</span></button>
-    <button class="tab" onclick="switchTab('field')">By Research Field</button>
+    <button class="tab active" onclick="switchTab('lab')">By Researcher <span class="tbadge">PRIMARY</span></button>
+    <button class="tab" onclick="switchTab('field')">By Field</button>
   </div>
 
   <div class="panel active" id="panel-lab">
-    <div class="prefilled-banner" id="prefilled-banner"></div>
+    <div class="pbanner" id="pbanner"></div>
     <div id="step-search">
-      <div class="discover-search" style="margin-bottom:12px;">
-        <input class="discover-input" type="text" id="lab-who" placeholder="Researcher name — e.g. Alan Sanfey, Molly Crockett, Dana Small..." />
-        <button class="discover-btn" id="btn-search" onclick="searchAuthor()">Search →</button>
+      <div class="srow" style="margin-bottom:10px;">
+        <input class="si" type="text" id="lab-who" placeholder="Researcher name — e.g. Alan Sanfey, Molly Crockett..." />
+        <button class="sbtn" id="btn-search" onclick="searchAuthor()">Search</button>
       </div>
-      <div class="status-msg" id="search-status" style="margin-bottom:16px;"></div>
+      <div class="rmsg" id="search-status" style="margin-bottom:14px;"></div>
       <div id="author-candidates"></div>
     </div>
     <div id="step-papers" style="display:none;">
-      <div class="author-selected-bar" id="author-bar"></div>
-      <div class="confidence-bar" id="confidence-bar">
-        <div class="confidence-title">Data sources found</div>
-        <div class="confidence-items" id="confidence-items"></div>
-      </div>
-      <div class="papers-stats" id="papers-stats"></div>
+      <div class="selbar" id="selbar"></div>
+      <div class="src-progress" id="src-progress"></div>
+      <div class="pstats" id="pstats"></div>
       <div id="papers-list"></div>
-      <div class="field" style="margin-top:24px;margin-bottom:0;">
+      <div class="paste-box" id="paste-box" style="display:none;">
+        <div class="paste-title">Supplementary materials</div>
+        <div class="paste-sub">System auto-searched public sources. Paste anything it may have missed.</div>
+        <textarea class="paste-area" id="paste-area" placeholder="Paste interview transcripts, lecture excerpts..."></textarea>
+      </div>
+      <div class="fld" style="margin-top:20px;">
         <label>Skill purpose</label>
-        <div class="chip-row" id="lab-goals">
-          <span class="chip on" data-v="topic selection & experiment design">Topic selection</span>
-          <span class="chip on" data-v="paper writing style & argumentation">Writing style</span>
-          <span class="chip" data-v="reviewer mindset & critique">Reviewer mindset</span>
-          <span class="chip" data-v="grant & funding logic">Grant logic</span>
+        <div class="chips" id="lab-goals">
+          <span class="chip on" data-v="topic selection and experiment design">Topic selection</span>
+          <span class="chip on" data-v="paper writing style and argumentation">Writing style</span>
+          <span class="chip" data-v="reviewer mindset and critique">Reviewer mindset</span>
+          <span class="chip" data-v="grant and funding logic">Grant logic</span>
           <span class="chip" data-v="methodology toolkit">Methodology</span>
         </div>
       </div>
     </div>
-    <div class="paste-section" id="paste-section" style="display:none;">
-      <div class="paste-title">Supplementary materials (optional)</div>
-      <div class="paste-sub">Paste any interview, talk transcript, blog post, or written statement from this researcher. This goes directly into the distillation as high-quality source material.</div>
-      <textarea class="paste-area" id="paste-materials" placeholder="Paste text here — interview excerpts, lecture transcripts, essays, opinion pieces..."></textarea>
-    </div>
   </div>
 
   <div class="panel" id="panel-field">
-    <div class="form-row">
-      <div class="field">
-        <label>Research domain</label>
-        <input type="text" id="field-name" placeholder="e.g. Cognitive neuroscience of moral decision-making" />
-      </div>
-      <div class="field">
-        <label>Time window</label>
-        <input type="text" id="field-year" placeholder="e.g. 2018–2024" />
-      </div>
+    <div class="frow">
+      <div class="fld"><label>Research domain</label><input type="text" id="field-name" placeholder="e.g. Cognitive neuroscience of moral decision-making" /></div>
+      <div class="fld"><label>Time window</label><input type="text" id="field-year" placeholder="e.g. 2018-2024" /></div>
     </div>
-    <div class="form-row">
-      <div class="field">
-        <label>Target journals / IF range</label>
-        <input type="text" id="field-journals" placeholder="e.g. Nature Neuroscience, PNAS  /  IF > 8" />
-      </div>
-      <div class="field">
-        <label>Your research angle (optional)</label>
-        <input type="text" id="field-angle" placeholder="e.g. nutrition × prosocial behavior" />
-      </div>
+    <div class="frow">
+      <div class="fld"><label>Target journals</label><input type="text" id="field-journals" placeholder="e.g. Nature Neuroscience, PNAS" /></div>
+      <div class="fld"><label>Your research angle</label><input type="text" id="field-angle" placeholder="e.g. nutrition x prosocial behavior" /></div>
     </div>
-    <div class="field" style="margin-bottom:0;">
+    <div class="fld" style="margin-bottom:0;">
       <label>What to extract</label>
-      <div class="chip-row" id="field-goals">
+      <div class="chips" id="field-goals">
         <span class="chip on" data-v="dominant topic structures and research patterns">Topic patterns</span>
         <span class="chip on" data-v="shared methodological conventions">Method conventions</span>
-        <span class="chip" data-v="emerging gaps and underexplored questions">Gaps & opportunities</span>
-        <span class="chip" data-v="writing & framing norms">Framing norms</span>
+        <span class="chip" data-v="emerging gaps and underexplored questions">Gaps</span>
+        <span class="chip" data-v="writing and framing norms">Framing norms</span>
         <span class="chip" data-v="reviewer expectations in top journals">Reviewer expectations</span>
       </div>
     </div>
   </div>
 
-  <div class="run-row">
-    <button class="btn-run" id="btn-run" onclick="runDistill()">Distill →</button>
-    <span class="status-msg" id="status-msg"></span>
+  <div class="runrow">
+    <button class="brun" id="btn-run" onclick="runDistill()">Distill</button>
+    <span class="rmsg" id="run-msg"></span>
   </div>
 
-  <div class="progress-wrap" id="progress">
-    <div class="progress-steps">
-      <div class="p-step" id="ps1"><div class="p-dot"></div>Searching public data</div>
-      <div class="p-step" id="ps2"><div class="p-dot"></div>Reading abstracts</div>
-      <div class="p-step" id="ps3"><div class="p-dot"></div>Extracting patterns</div>
-      <div class="p-step" id="ps4"><div class="p-dot"></div>Building persona</div>
-      <div class="p-step" id="ps5"><div class="p-dot"></div>Generating skill</div>
+  <div class="prog" id="prog">
+    <div class="psteps">
+      <div class="pstep" id="ps1"><div class="pdot"></div>Gathering sources</div>
+      <div class="pstep" id="ps2"><div class="pdot"></div>Reading literature</div>
+      <div class="pstep" id="ps3"><div class="pdot"></div>Extracting frameworks</div>
+      <div class="pstep" id="ps4"><div class="pdot"></div>Building persona</div>
+      <div class="pstep" id="ps5"><div class="pdot"></div>Writing Skill</div>
     </div>
   </div>
 
-  <div class="output-wrap" id="output-wrap">
-    <div class="output-header">
-      <div class="output-title" id="output-label">SKILL OUTPUT</div>
-      <div class="output-actions">
-        <button class="btn-out" onclick="copyOut()">Copy raw</button>
-        <button class="btn-out" onclick="downloadOut()">Download .md</button>
-        <button class="btn-out accent" onclick="saveAndChat()">Save & Chat →</button>
+  <div class="owrap" id="owrap">
+    <div class="ohead">
+      <div class="otitle" id="otitle">SKILL OUTPUT</div>
+      <div class="oactions">
+        <button class="obtn" onclick="copyOut()">Copy</button>
+        <button class="obtn" onclick="downloadOut()">Download .md</button>
+        <button class="obtn hi" onclick="saveAndChat()">Save and Chat</button>
       </div>
     </div>
-    <div class="output-body"><div class="md-render" id="output-rendered"></div></div>
+    <div class="obody"><div class="md" id="omd"></div></div>
   </div>
 </div>
 
-<div class="quality-report" id="quality-report">
-    <div class="qr-header">
-      <span>QUALITY VERIFICATION REPORT</span>
-      <span class="qr-score" id="qr-score"></span>
-    </div>
-    <div class="qr-body" id="qr-body"></div>
-  </div>
+<hr class="dv">
 
-<hr class="divider">
-
-<div class="section" id="examples">
-  <div class="section-tag">// quick start — click any researcher to distill</div>
-  <h2>Featured researchers</h2>
-  <div class="quick-grid">
-    <div class="quick-card" onclick="quickDistill('Alan Sanfey','Radboud University','Social and moral decision-making, ultimatum game, inequality aversion')">
-      <div class="quick-name">Alan Sanfey</div>
-      <div class="quick-inst">Radboud University</div>
-      <div class="quick-desc">Social decision neuroscience, fairness, the ultimatum game, neural basis of economic choices.</div>
-      <div class="quick-tags"><span class="quick-tag">social neuroscience</span><span class="quick-tag">fMRI</span><span class="quick-tag">decision-making</span></div>
-      <div class="quick-arrow">Distill →</div>
-    </div>
-    <div class="quick-card" onclick="quickDistill('Molly Crockett','Princeton University','Moral psychology, harm aversion, online outrage, serotonin and moral judgment')">
-      <div class="quick-name">Molly Crockett</div>
-      <div class="quick-inst">Princeton University</div>
-      <div class="quick-desc">Moral psychology, harm aversion, how neurotransmitters shape ethical decisions.</div>
-      <div class="quick-tags"><span class="quick-tag">moral psychology</span><span class="quick-tag">harm aversion</span><span class="quick-tag">serotonin</span></div>
-      <div class="quick-arrow">Distill →</div>
-    </div>
-    <div class="quick-card" onclick="quickDistill('Dana Small','Yale University','Nutrition cognition gut-brain axis taste reward obesity food choice')">
-      <div class="quick-name">Dana Small</div>
-      <div class="quick-inst">Yale University</div>
-      <div class="quick-desc">Gut-brain axis, taste perception, how nutrition shapes reward and cognition.</div>
-      <div class="quick-tags"><span class="quick-tag">nutrition & brain</span><span class="quick-tag">reward</span><span class="quick-tag">gut-brain</span></div>
-      <div class="quick-arrow">Distill →</div>
-    </div>
-    <div class="quick-card" onclick="quickDistill('Jean Decety','University of Chicago','Empathy moral development prosocial behavior neuroscience altruism')">
-      <div class="quick-name">Jean Decety</div>
-      <div class="quick-inst">University of Chicago</div>
-      <div class="quick-desc">Empathy, moral development, prosocial behavior, the neuroscience of altruism.</div>
-      <div class="quick-tags"><span class="quick-tag">empathy</span><span class="quick-tag">prosocial</span><span class="quick-tag">development</span></div>
-      <div class="quick-arrow">Distill →</div>
-    </div>
-    <div class="quick-card" onclick="quickDistill('Matthew Rushworth','University of Oxford','Value-based decision making prefrontal cortex TMS computational')">
-      <div class="quick-name">Matthew Rushworth</div>
-      <div class="quick-inst">University of Oxford</div>
-      <div class="quick-desc">Value-based decisions, prefrontal cortex, computational models of choice.</div>
-      <div class="quick-tags"><span class="quick-tag">value decisions</span><span class="quick-tag">prefrontal</span><span class="quick-tag">TMS</span></div>
-      <div class="quick-arrow">Distill →</div>
-    </div>
-    <div class="quick-card" onclick="quickDistill('Antonio Rangel','Caltech','Neuroeconomics food choice computational models value coding vmPFC')">
-      <div class="quick-name">Antonio Rangel</div>
-      <div class="quick-inst">Caltech</div>
-      <div class="quick-desc">Neuroeconomics, food decisions, how the brain computes value and drives choice.</div>
-      <div class="quick-tags"><span class="quick-tag">neuroeconomics</span><span class="quick-tag">food choice</span><span class="quick-tag">vmPFC</span></div>
-      <div class="quick-arrow">Distill →</div>
-    </div>
-  </div>
-</div>
-
-<hr class="divider">
-
-<div class="section" id="how">
-  <div class="section-tag">// how it works</div>
+<div class="sec" id="how">
+  <div class="stag">// how it works</div>
   <h2>Three steps to a research mind</h2>
-  <div class="how-grid">
-    <div class="how-card">
-      <div class="how-num">01 — DISCOVER</div>
+  <div class="howgrid">
+    <div class="howcard">
+      <div class="hownum">01 — DISCOVER</div>
       <h3>Find the top labs</h3>
-      <p>Search any research field. We use Claude with web search to rank the most influential researchers and surface who's doing the most important work.</p>
+      <p>Search any field. We rank the most influential researchers and surface who is doing the most important work right now.</p>
     </div>
-    <div class="how-card">
-      <div class="how-num">02 — DISTILL</div>
-      <h3>Extract the persona</h3>
-      <p>We pull their papers from Semantic Scholar, search for talks, interviews, and lab websites. Claude synthesizes everything into a structured persona with a confidence report.</p>
+    <div class="howcard">
+      <div class="hownum">02 — DISTILL</div>
+      <h3>Extract the mind</h3>
+      <p>We pull papers from Semantic Scholar, bioRxiv, PubMed, and auto-search public talks, interviews, and lab websites. Claude synthesizes everything into a Skill with an Agentic Protocol — a search strategy derived from this researcher's epistemic standards.</p>
     </div>
-    <div class="how-card">
-      <div class="how-num">03 — CONVERSE</div>
-      <h3>Think together</h3>
-      <p>Have a real intellectual conversation with the distilled persona. Or assemble a roundtable — multiple researchers debating your idea in four different discussion modes.</p>
+    <div class="howcard">
+      <div class="hownum">03 — CONVERSE</div>
+      <h3>Think with live data</h3>
+      <p>When you chat, the PI searches current literature before answering — not from memory. Each response is grounded in real papers found in that moment.</p>
     </div>
   </div>
 </div>
 
 <footer>
-  <div>LabSkill — open source, BYOK, runs entirely in your browser</div>
-  <a href="https://github.com/yourusername/labskill" target="_blank">View on GitHub →</a>
+  <div>LabSkill — open source, runs in your browser</div>
+  <a href="https://github.com/oahneW/labskill-oss" target="_blank">View on GitHub</a>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <script>
-// ── FREE TIER + API KEY ───────────────────────────────────
-const FREE_QUOTA = 3;
-const PROXY_URL = 'https://labskill-oss.venhao-huang.workers.dev/proxy'; // replace after deploying worker
+var FREE_QUOTA = 3;
+var PROXY_URL = 'https://labskill-oss.venhao-huang.workers.dev/proxy';
+var apiKey = sessionStorage.getItem('ls_key') || '';
+var usingFree = false;
+var selAuthor = null;
+var papers = [];
+var publicSources = {};
+var generated = '';
+var filename = 'skill.md';
+var curTab = 'lab';
 
-let apiKey = sessionStorage.getItem('labskill_key') || '';
-let usingFree = false;
-let selectedAuthor = null, fetchedPapers = [], generated = '', currentFilename = 'skill.md', currentTab = 'lab';
+function getFreeUsed() { return parseInt(localStorage.getItem('ls_free') || '0'); }
+function incFree() { localStorage.setItem('ls_free', String(getFreeUsed() + 1)); }
+function freeLeft() { return Math.max(0, FREE_QUOTA - getFreeUsed()); }
 
-function getFreeUsed() { return parseInt(localStorage.getItem('labskill_free_used')||'0'); }
-function incrementFree() { localStorage.setItem('labskill_free_used', getFreeUsed()+1); }
-function getFreeRemaining() { return Math.max(0, FREE_QUOTA - getFreeUsed()); }
-
-function updateKeyIndicator() {
-  var el = document.getElementById('api-indicator');
-  if (apiKey) { el.textContent = 'API Key ✓'; el.className = 'api-indicator set'; }
-  else {
-    var rem = getFreeRemaining();
-    el.textContent = rem > 0 ? rem+' free left' : 'Add API Key';
-    el.className = rem > 0 ? 'api-indicator set' : 'api-indicator unset';
-  }
+function updateBtn() {
+  var el = document.getElementById('kbtn');
+  if (apiKey) { el.textContent = 'API Key set'; el.className = 'key-btn set'; }
+  else if (freeLeft() > 0) { el.textContent = freeLeft() + ' free left'; el.className = 'key-btn set'; }
+  else { el.textContent = 'Add API Key'; el.className = 'key-btn unset'; }
 }
 
 function openModal() {
-  var rem = getFreeRemaining();
-  document.getElementById('free-count-display').textContent = rem;
-  if (rem > 0 && !apiKey) {
-    document.getElementById('modal-free').style.display = 'block';
-    document.getElementById('modal-key-input').style.display = 'none';
-    document.getElementById('modal-title').textContent = 'Welcome to LabSkill';
+  document.getElementById('fleft').textContent = freeLeft();
+  if (freeLeft() > 0 && !apiKey) {
+    document.getElementById('mfree').style.display = 'block';
+    document.getElementById('mkey').style.display = 'none';
+    document.getElementById('mh').textContent = 'Welcome to LabSkill';
   } else {
-    document.getElementById('modal-free').style.display = 'none';
-    document.getElementById('modal-key-input').style.display = 'block';
-    document.getElementById('modal-title').textContent = apiKey ? 'Update API Key' : 'Free quota used up';
+    document.getElementById('mfree').style.display = 'none';
+    document.getElementById('mkey').style.display = 'block';
+    document.getElementById('mh').textContent = apiKey ? 'Update API Key' : 'Add your API key';
+    setTimeout(function() { document.getElementById('kin').focus(); }, 50);
   }
-  document.getElementById('key-modal').classList.add('open');
+  document.getElementById('modal').classList.add('open');
 }
-
-function useFree() {
-  usingFree = true;
-  closeModal();
-  updateKeyIndicator();
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function useFree() { usingFree = true; closeModal(); updateBtn(); }
+function showKey() {
+  document.getElementById('mfree').style.display = 'none';
+  document.getElementById('mkey').style.display = 'block';
+  document.getElementById('mh').textContent = 'Add your API key';
+  setTimeout(function() { document.getElementById('kin').focus(); }, 50);
 }
-
-function showKeyInput() {
-  document.getElementById('modal-free').style.display = 'none';
-  document.getElementById('modal-key-input').style.display = 'block';
-  document.getElementById('modal-title').textContent = 'Add your API key';
-  setTimeout(function(){document.getElementById('key-input').focus();}, 100);
-}
-
-function closeModal() { document.getElementById('key-modal').classList.remove('open'); }
-
 function saveKey() {
-  var val = document.getElementById('key-input').value.trim();
-  if (!val) return;
-  apiKey = val;
-  usingFree = false;
-  sessionStorage.setItem('labskill_key', val);
-  updateKeyIndicator();
-  closeModal();
+  var v = document.getElementById('kin').value.trim();
+  if (!v) return;
+  apiKey = v; usingFree = false;
+  sessionStorage.setItem('ls_key', v);
+  updateBtn(); closeModal();
 }
-
-document.getElementById('key-input').addEventListener('keydown', function(e){ if(e.key==='Enter') saveKey(); });
-document.getElementById('key-modal').addEventListener('click', function(e){ if(e.target===e.currentTarget) closeModal(); });
-updateKeyIndicator();
+document.getElementById('kin').addEventListener('keydown', function(e) { if (e.key === 'Enter') saveKey(); });
+document.getElementById('modal').addEventListener('click', function(e) { if (e.target === e.currentTarget) closeModal(); });
+updateBtn();
 
 function requireKey() {
   if (apiKey) return true;
-  if (getFreeRemaining() > 0) {
-    usingFree = true;
-    return true;
-  }
-  openModal();
-  return false;
+  if (freeLeft() > 0) { usingFree = true; return true; }
+  openModal(); return false;
 }
 
-// ── CLAUDE API ────────────────────────────────────────────
-async function callClaude(messages, { useWebSearch = false, maxTokens = 2000 } = {}) {
-  const body = {
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: maxTokens,messages:messages,
-  };
-  if (useWebSearch) {
-    body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+async function callClaude(messages, opts) {
+  opts = opts || {};
+  var body = { model: 'claude-sonnet-4-20250514', max_tokens: opts.maxTokens || 2000, messages: messages };
+  if (opts.webSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+  var res;
+  if (usingFree && !apiKey) {
+    res = await fetch(PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (res.ok) { incFree(); if (freeLeft() === 0) { usingFree = false; updateBtn(); } }
+  } else {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify(body)
+    });
   }
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify(body),
-  });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `API error ${res.status}`);
+    var e = await res.json().catch(function() { return {}; });
+    throw new Error((e.error && e.error.message) || 'API error ' + res.status);
   }
-  const data = await res.json();
-  return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  var d = await res.json();
+  return (d.content || []).filter(function(b) { return b.type === 'text'; }).map(function(b) { return b.text; }).join('\n').trim();
 }
 
-// ── DISCOVER ──────────────────────────────────────────────
-function quickDistill(name, inst, hint) {
-  // Fill in the distill form and scroll to it
+function quickDistill(name, inst) {
   document.getElementById('lab-who').value = name;
-  var banner = document.getElementById('prefilled-banner');
-  banner.textContent = '↑ Click Search to find ' + name + ' on Semantic Scholar';
-  banner.style.display = 'block';
+  var b = document.getElementById('pbanner');
+  b.textContent = 'Pre-filled: ' + name + ' at ' + inst;
+  b.style.display = 'block';
   switchTab('lab');
-  document.getElementById('distill').scrollIntoView({behavior:'smooth'});
-  // Auto-trigger search after short delay
-  setTimeout(function(){ searchAuthor(); }, 400);
+  document.getElementById('distill').scrollIntoView({ behavior: 'smooth' });
+  setTimeout(function() { searchAuthor(); }, 600);
 }
 
 function quickSearch(term) {
-  document.getElementById('field-input').value = term;
+  document.getElementById('disc-in').value = term;
   discoverLabs();
 }
 
 async function discoverLabs() {
   if (!requireKey()) return;
-  const field = document.getElementById('field-input').value.trim();
+  var field = document.getElementById('disc-in').value.trim();
   if (!field) return;
-  const btn = document.getElementById('discover-btn');
-  const status = document.getElementById('discover-status');
-  const results = document.getElementById('lab-results');
+  var btn = document.getElementById('disc-btn');
+  var status = document.getElementById('dstatus');
+  var results = document.getElementById('lab-results');
   btn.disabled = true;
-  status.textContent = 'Searching for top researchers...';
-  results.innerHTML = skeletonHTML();
+  status.textContent = 'Searching...';
+  results.innerHTML = '<div class="sk-grid">' + Array(6).fill('<div class="sk-card"><div class="sk-line w35"></div><div class="sk-line w70" style="height:16px;margin-bottom:5px"></div><div class="sk-line w50"></div></div>').join('') + '</div>';
   try {
-    const prompt = `Find the top 12 most influential researchers in: "${field}". Use web search to find real data.
-Return ONLY a valid JSON array, no markdown, no explanation:
-[{"name":"Full Name","institution":"University","country":"Country","hIndex":45,"citations":12000,"focus":"3-5 word description","tags":["tag1","tag2","tag3"]}]
-Sort by impact. Include diverse institutions. Return exactly 12.`;
-    const text = await callClaude([{ role: 'user', content: prompt }], { useWebSearch: true, maxTokens: 1500 });
-    const match = text.replace(/```json|```/g, '').trim().match(/\[[\s\S]*\]/);
-    if (!match) throw new Error('Could not parse results');
-    const researchers = JSON.parse(match[0]);
-    status.textContent = 'Found ' + researchers.length + ' top researchers in "' + field + '"';
-    results.innerHTML = renderLabGrid(researchers);
-  } catch(e) { status.textContent = '✗ ' + e.message; results.innerHTML = ''; }
+    var prompt = 'Find the top 12 most influential researchers in: "' + field + '". Use web search to find real data. Return ONLY a valid JSON array with no markdown:\n[{"name":"Full Name","institution":"University","country":"Country","hIndex":45,"citations":12000,"tags":["tag1","tag2","tag3"]}]\nSort by impact. Return exactly 12.';
+    var text = await callClaude([{ role: 'user', content: prompt }], { webSearch: true, maxTokens: 1500 });
+    var clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    var s = clean.indexOf('['); var e2 = clean.lastIndexOf(']');
+    if (s === -1 || e2 === -1) throw new Error('Could not parse results');
+    var rs = JSON.parse(clean.slice(s, e2 + 1));
+    status.textContent = 'Found ' + rs.length + ' top researchers in "' + field + '"';
+    results.innerHTML = '<div class="lgrid">' + rs.map(function(r, i) {
+      var tags = (r.tags || []).map(function(t) { return '<span class="ltag">' + t + '</span>'; }).join('');
+      var rj = JSON.stringify(r).replace(/"/g, '&quot;');
+      return '<div class="lcard" onclick="prefillDistill(' + rj + ')">' +
+        '<div class="lrank">#' + (i + 1) + '</div>' +
+        '<div class="lname">' + r.name + '</div>' +
+        '<div class="linst">' + (r.institution || '') + (r.country ? ' · ' + r.country : '') + '</div>' +
+        '<div class="lmeta">' + (r.hIndex ? '<div class="lstat"><b>h' + r.hIndex + '</b> index</div>' : '') +
+        (r.citations ? '<div class="lstat"><b>' + (r.citations / 1000).toFixed(0) + 'k</b> citations</div>' : '') + '</div>' +
+        '<div class="ltags">' + tags + '</div><div class="lcta">Distill</div></div>';
+    }).join('') + '</div>';
+  } catch(e) { status.textContent = 'Error: ' + e.message; results.innerHTML = ''; }
   btn.disabled = false;
-}
-
-function skeletonHTML() {
-  return '<div class="skeleton-grid">' + Array(6).fill('<div class="skel-card"><div class="skel-line short"></div><div class="skel-line wide" style="height:18px;margin-bottom:6px"></div><div class="skel-line mid"></div></div>').join('') + '</div>';
-}
-
-function renderLabGrid(rs) {
-  return '<div class="lab-grid">' + rs.map(function(r,i) {
-    var tags = (r.tags||[]).map(function(t){return '<span class="lab-tag">'+t+'</span>';}).join('');
-    var rJson = JSON.stringify(r).replace(/"/g,'&quot;');
-    return '<div class="lab-card" onclick="prefillDistill('+rJson+')">' +
-      '<div class="lab-rank">#'+(i+1)+'</div>' +
-      '<div class="lab-name">'+r.name+'</div>' +
-      '<div class="lab-inst">'+r.institution+(r.country?' · '+r.country:'')+'</div>' +
-      '<div class="lab-stats">'+(r.hIndex?'<div class="lab-stat"><strong>h'+r.hIndex+'</strong> index</div>':'')+
-      (r.citations?'<div class="lab-stat"><strong>'+(r.citations/1000).toFixed(0)+'k</strong> citations</div>':'')+'</div>' +
-      '<div class="lab-tags">'+tags+'</div>' +
-      '<div class="lab-distill">Distill →</div></div>';
-  }).join('') + '</div>';
 }
 
 function prefillDistill(r) {
   document.getElementById('lab-who').value = r.name;
-  var banner = document.getElementById('prefilled-banner');
-  banner.textContent = '↑ Pre-filled from Discover: ' + r.name + ' · ' + r.institution;
-  banner.style.display = 'block';
+  var b = document.getElementById('pbanner');
+  b.textContent = 'Pre-filled from Discover: ' + r.name + (r.institution ? ' at ' + r.institution : '');
+  b.style.display = 'block';
   switchTab('lab');
-  document.getElementById('distill').scrollIntoView({behavior:'smooth'});
+  document.getElementById('distill').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ── SEMANTIC SCHOLAR ──────────────────────────────────────
 async function searchAuthor() {
-  const name = document.getElementById('lab-who').value.trim();
+  var name = document.getElementById('lab-who').value.trim();
   if (!name) return;
-  const btn = document.getElementById('btn-search');
-  const status = document.getElementById('search-status');
-  const candidates = document.getElementById('author-candidates');
-  btn.disabled = true;
-  status.textContent = 'Searching Semantic Scholar...';
-  candidates.innerHTML = '';
+  var btn = document.getElementById('btn-search');
+  var status = document.getElementById('search-status');
+  var cands = document.getElementById('author-candidates');
+  btn.disabled = true; status.textContent = 'Searching Semantic Scholar...'; cands.innerHTML = '';
   try {
-    const url = 'https://api.semanticscholar.org/graph/v1/author/search?query=' + encodeURIComponent(name) + '&fields=name,hIndex,citationCount,affiliations,paperCount&limit=5';
-    const r = await fetch(url, {headers:{'User-Agent':'LabSkill/1.0'}});
-    if (r.status === 429) throw new Error('Rate limited — wait 30 seconds and try again');
+    var url = 'https://api.semanticscholar.org/graph/v1/author/search?query=' + encodeURIComponent(name) + '&fields=name,hIndex,citationCount,affiliations,paperCount&limit=5';
+    var r = await fetch(url, { headers: { 'User-Agent': 'LabSkill/1.0' } });
+    if (r.status === 429) throw new Error('Rate limited — wait 30 seconds');
     if (!r.ok) throw new Error('Semantic Scholar error ' + r.status);
-    const data = await r.json();
-    const authors = (data.data||[]).map(function(a){
-      return {authorId:a.authorId,name:a.name,hIndex:a.hIndex||0,citationCount:a.citationCount||0,paperCount:a.paperCount||0,affiliation:(a.affiliations&&a.affiliations[0])?a.affiliations[0].name:''};
+    var d = await r.json();
+    var authors = (d.data || []).map(function(a) {
+      return { authorId: a.authorId, name: a.name, hIndex: a.hIndex || 0, citationCount: a.citationCount || 0, paperCount: a.paperCount || 0, affiliation: (a.affiliations && a.affiliations[0]) ? a.affiliations[0].name : '' };
     });
     if (!authors.length) throw new Error('No results — try a different spelling');
     status.textContent = 'Found ' + authors.length + ' matching researchers:';
-    candidates.innerHTML = authors.map(function(a) {
-      var aJson = JSON.stringify(a).replace(/"/g,'&quot;');
-      return '<div class="author-card"><div>' +
-        '<div class="author-name">'+a.name+'</div>' +
-        '<div class="author-aff">'+(a.affiliation||'Institution not listed')+'</div>' +
-        '<div class="author-meta"><span>h-index <strong>'+a.hIndex+'</strong></span>' +
-        '<span><strong>'+(a.citationCount/1000).toFixed(1)+'k</strong> citations</span>' +
-        '<span><strong>'+a.paperCount+'</strong> papers</span></div></div>' +
-        '<button class="author-select-btn" onclick="selectAuthor('+aJson+')">Select & fetch papers →</button></div>';
+    cands.innerHTML = authors.map(function(a) {
+      var aj = JSON.stringify(a).replace(/"/g, '&quot;');
+      return '<div class="acard"><div><div class="aname">' + a.name + '</div><div class="aaff">' + (a.affiliation || 'Institution not listed') + '</div><div class="ameta"><span>h-index <b>' + a.hIndex + '</b></span><span><b>' + (a.citationCount / 1000).toFixed(1) + 'k</b> citations</span><span><b>' + a.paperCount + '</b> papers</span></div></div><button class="abtn" onclick="selectAuthor(' + aj + ')">Select and fetch</button></div>';
     }).join('');
-  } catch(e) { status.textContent = '✗ ' + e.message; }
+  } catch(e) { status.textContent = 'Error: ' + e.message; }
   btn.disabled = false;
 }
 
+function showSrcRow(id, name, status, result) {
+  var el = document.getElementById('src-' + id);
+  if (!el) return;
+  var icon = status === 'ok' ? '✓' : status === 'loading' ? '·' : '—';
+  el.querySelector('.src-icon').textContent = icon;
+  el.querySelector('.src-status').textContent = status === 'ok' ? 'found' : status === 'loading' ? '...' : 'none';
+  el.querySelector('.src-status').className = 'src-status ' + status;
+  if (result) el.querySelector('.src-result').textContent = result;
+}
+
 async function selectAuthor(author) {
-  selectedAuthor = author;
+  selAuthor = author; papers = []; publicSources = {};
   document.getElementById('step-papers').style.display = 'block';
   document.getElementById('author-candidates').innerHTML = '';
   document.getElementById('search-status').textContent = '';
-  document.getElementById('paste-section').style.display='block';
-  document.getElementById('author-bar').innerHTML =
-    '<div class="name">'+author.name+' <span style="font-family:var(--mono);font-size:12px;color:var(--muted);">· '+(author.affiliation||'')+' · h'+author.hIndex+'</span></div>' +
-    '<span class="change" onclick="resetSearch()">Change researcher</span>';
-  var statsEl = document.getElementById('papers-stats');
-  var listEl = document.getElementById('papers-list');
-  statsEl.innerHTML = '<div class="pstat"><div class="pstat-num">...</div><div class="pstat-label">Fetching</div></div>';
-  listEl.innerHTML = '';
+  document.getElementById('selbar').innerHTML =
+    '<div class="selname">' + author.name + ' <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">— ' + (author.affiliation || '') + ' — h' + author.hIndex + '</span></div>' +
+    '<span class="chg" onclick="resetSearch()">Change</span>';
+
+  // Init source progress display
+  var srcEl = document.getElementById('src-progress');
+  var sources = [
+    {id:'ss', name:'Semantic Scholar'},
+    {id:'bx', name:'bioRxiv'},
+    {id:'pm', name:'PubMed'},
+    {id:'oa', name:'OpenAlex'},
+    {id:'web', name:'Lab website'},
+    {id:'talks', name:'Talks & interviews'},
+  ];
+  srcEl.innerHTML = sources.map(function(s) {
+    return '<div class="src-row" id="src-' + s.id + '"><span class="src-icon">·</span><span class="src-name">' + s.name + '</span><span class="src-result"></span><span class="src-status loading">...</span></div>';
+  }).join('');
+
+  document.getElementById('pstats').innerHTML = '';
+  document.getElementById('papers-list').innerHTML = '';
+
+  // Semantic Scholar
   try {
-    var url = 'https://api.semanticscholar.org/graph/v1/author/'+author.authorId+'/papers?fields=title,year,citationCount,abstract,venue,externalIds&limit=50&sort=citationCount';
-    var r = await fetch(url, {headers:{'User-Agent':'LabSkill/1.0'}});
-    if (r.status === 429) throw new Error('Rate limited — wait 30 seconds');
-    if (!r.ok) throw new Error('Semantic Scholar error ' + r.status);
-    var data = await r.json();
-    fetchedPapers = (data.data||[]).map(function(p){
-      return {title:p.title||'',year:p.year||null,citations:p.citationCount||0,abstract:p.abstract||'',venue:p.venue||'',doi:(p.externalIds&&p.externalIds.DOI)||null};
+    var url = 'https://api.semanticscholar.org/graph/v1/author/' + author.authorId + '/papers?fields=title,year,citationCount,abstract,venue,externalIds&limit=50&sort=citationCount';
+    var r = await fetch(url, { headers: { 'User-Agent': 'LabSkill/1.0' } });
+    if (r.status === 429) throw new Error('Rate limited');
+    var d = await r.json();
+    papers = (d.data || []).map(function(p) {
+      return { title: p.title || '', year: p.year || null, citations: p.citationCount || 0, abstract: p.abstract || '', venue: p.venue || '', doi: (p.externalIds && p.externalIds.DOI) || null, source: 'ss' };
     });
-    // Multi-source enrichment: bioRxiv + PubMed + ORCID + OpenAlex
-    var extraCounts = {biorxiv:0, pubmed:0, orcid:null, openalexCitations:null};
+    showSrcRow('ss', '', 'ok', papers.length + ' papers');
+  } catch(e) { showSrcRow('ss', '', 'skip', e.message); }
 
-    // bioRxiv
-    try {
-      var biorxivUrl = 'https://api.biorxiv.org/details/biorxiv/'+encodeURIComponent(selectedAuthor.name)+'/0/20/json';
-      var br = await fetch(biorxivUrl);
-      if (br.ok) {
-        var brd = await br.json();
-        ((brd.collection)||[]).forEach(function(p) {
-          var title = p.title||'';
-          if (title && !fetchedPapers.find(function(x){return x.title.toLowerCase().slice(0,30)===title.toLowerCase().slice(0,30);})) {
-            fetchedPapers.push({title:title,year:p.date?parseInt(p.date.slice(0,4)):null,citations:0,abstract:p.abstract||'',venue:'bioRxiv',doi:p.doi||null,source:'biorxiv'});
-            extraCounts.biorxiv++;
-          }
-        });
-      }
-    } catch(e) { console.warn('bioRxiv failed', e); }
+  // bioRxiv
+  try {
+    var br = await fetch('https://api.biorxiv.org/details/biorxiv/' + encodeURIComponent(author.name) + '/0/20/json');
+    if (br.ok) {
+      var brd = await br.json(); var cnt = 0;
+      ((brd.collection) || []).forEach(function(p) {
+        var t = p.title || '';
+        if (t && !papers.find(function(x) { return x.title.toLowerCase().slice(0, 25) === t.toLowerCase().slice(0, 25); })) {
+          papers.push({ title: t, year: p.date ? parseInt(p.date.slice(0, 4)) : null, citations: 0, abstract: p.abstract || '', venue: 'bioRxiv', doi: p.doi || null, source: 'bx' });
+          cnt++;
+        }
+      });
+      showSrcRow('bx', '', cnt > 0 ? 'ok' : 'skip', cnt > 0 ? cnt + ' preprints' : 'none found');
+    } else { showSrcRow('bx', '', 'skip', 'none found'); }
+  } catch(e) { showSrcRow('bx', '', 'skip', 'none found'); }
 
-    // PubMed search
-    try {
-      var pmSearch = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term='+encodeURIComponent(selectedAuthor.name+'[Author]')+'&retmax=20&retmode=json';
-      var pms = await fetch(pmSearch);
-      if (pms.ok) {
-        var pmsd = await pms.json();
-        var ids = (pmsd.esearchresult&&pmsd.esearchresult.idlist)||[];
-        if (ids.length) {
-          var pmFetch = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id='+ids.join(',')+'&retmode=json';
-          var pmf = await fetch(pmFetch);
-          if (pmf.ok) {
-            var pmfd = await pmf.json();
-            var result = pmfd.result||{};
-            ids.forEach(function(id) {
-              var p = result[id]; if (!p) return;
-              var title = p.title||'';
-              if (title && !fetchedPapers.find(function(x){return x.title.toLowerCase().slice(0,30)===title.toLowerCase().slice(0,30);})) {
-                var year = p.pubdate?parseInt(p.pubdate.slice(0,4)):null;
-                fetchedPapers.push({title:title,year:year,citations:0,abstract:'',venue:p.source||'PubMed',doi:null,source:'pubmed'});
-                extraCounts.pubmed++;
-              }
-            });
-          }
+  // PubMed
+  try {
+    var pms = await fetch('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=' + encodeURIComponent(author.name + '[Author]') + '&retmax=15&retmode=json');
+    if (pms.ok) {
+      var pmsd = await pms.json(); var ids = ((pmsd.esearchresult && pmsd.esearchresult.idlist) || []); var pmcnt = 0;
+      if (ids.length) {
+        var pmf = await fetch('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=' + ids.join(',') + '&retmode=json');
+        if (pmf.ok) {
+          var pmfd = await pmf.json(); var result = pmfd.result || {};
+          ids.forEach(function(id) {
+            var p = result[id]; if (!p) return;
+            var t = p.title || '';
+            if (t && !papers.find(function(x) { return x.title.toLowerCase().slice(0, 25) === t.toLowerCase().slice(0, 25); })) {
+              papers.push({ title: t, year: p.pubdate ? parseInt(p.pubdate.slice(0, 4)) : null, citations: 0, abstract: '', venue: p.source || 'PubMed', doi: null, source: 'pm' });
+              pmcnt++;
+            }
+          });
         }
       }
-    } catch(e) { console.warn('PubMed failed', e); }
+      showSrcRow('pm', '', pmcnt > 0 ? 'ok' : 'skip', pmcnt > 0 ? pmcnt + ' papers' : 'none found');
+    } else { showSrcRow('pm', '', 'skip', 'none found'); }
+  } catch(e) { showSrcRow('pm', '', 'skip', 'none found'); }
 
-    // ORCID — get profile info (affiliation, other IDs)
-    var orcidData = null;
+  // OpenAlex
+  var oaCitations = null;
+  try {
+    var oa = await fetch('https://api.openalex.org/authors?search=' + encodeURIComponent(author.name) + '&per-page=1', { headers: { 'User-Agent': 'LabSkill/1.0' } });
+    if (oa.ok) {
+      var oad = await oa.json(); var oaa = oad.results && oad.results[0];
+      if (oaa) {
+        oaCitations = oaa.cited_by_count;
+        showSrcRow('oa', '', 'ok', oaCitations.toLocaleString() + ' total citations');
+      } else { showSrcRow('oa', '', 'skip', 'not found'); }
+    } else { showSrcRow('oa', '', 'skip', 'not found'); }
+  } catch(e) { showSrcRow('oa', '', 'skip', 'not found'); }
+
+  // Auto-search: lab website + talks/interviews (using Claude web search, silent on failure)
+  if (requireKey()) {
     try {
-      var orcidSearch = 'https://pub.orcid.org/v3.0/search/?q=family-name:'+encodeURIComponent(selectedAuthor.name.split(' ').slice(-1)[0])+'%20AND%20given-names:'+encodeURIComponent(selectedAuthor.name.split(' ')[0])+'&rows=1';
-      var ors = await fetch(orcidSearch, {headers:{Accept:'application/json'}});
-      if (ors.ok) {
-        var orsd = await ors.json();
-        var orcidId = orsd.result&&orsd.result[0]&&orsd.result[0]['orcid-identifier']&&orsd.result[0]['orcid-identifier'].path;
-        if (orcidId) {
-          extraCounts.orcid = orcidId;
-          // Try to get works count
-          var orProfile = await fetch('https://pub.orcid.org/v3.0/'+orcidId+'/person', {headers:{Accept:'application/json'}});
-        }
-      }
-    } catch(e) { console.warn('ORCID failed', e); }
+      var webPrompt = 'Search for the lab website or personal academic homepage of "' + author.name + '". Return only the URL and a 1-sentence description of what you found. If not found, say "not found".';
+      var webResult = await callClaude([{ role: 'user', content: webPrompt }], { webSearch: true, maxTokens: 200 });
+      if (webResult && !webResult.toLowerCase().includes('not found')) {
+        publicSources.website = webResult;
+        showSrcRow('web', '', 'ok', webResult.slice(0, 60));
+      } else { showSrcRow('web', '', 'skip', 'not found'); }
+    } catch(e) { showSrcRow('web', '', 'skip', 'not found'); }
 
-    // OpenAlex — get citation metrics and co-authors
     try {
-      var oaUrl = 'https://api.openalex.org/authors?search='+encodeURIComponent(selectedAuthor.name)+'&per-page=1';
-      var oa = await fetch(oaUrl, {headers:{'User-Agent':'LabSkill/1.0 (mailto:user@labskill.com)'}});
-      if (oa.ok) {
-        var oad = await oa.json();
-        var oaAuthor = oad.results&&oad.results[0];
-        if (oaAuthor) {
-          extraCounts.openalexCitations = oaAuthor.cited_by_count;
-          extraCounts.openalexWorks = oaAuthor.works_count;
-          extraCounts.openalexCoauthors = ((oaAuthor.x_concepts||[]).slice(0,5)).map(function(c){return c.display_name;});
-          extraCounts.openalexId = oaAuthor.id;
-        }
-      }
-    } catch(e) { console.warn('OpenAlex failed', e); }
+      var talksPrompt = 'Search for public talks, interviews, or podcasts by academic researcher "' + author.name + '". Find any lecture videos, conference talks, or media interviews. Return a brief summary (100 words) of key things they said about their research, methodology, or scientific beliefs. If nothing found, say "not found".';
+      var talksResult = await callClaude([{ role: 'user', content: talksPrompt }], { webSearch: true, maxTokens: 400 });
+      if (talksResult && !talksResult.toLowerCase().includes('not found')) {
+        publicSources.talks = talksResult;
+        showSrcRow('talks', '', 'ok', 'found public statements');
+      } else { showSrcRow('talks', '', 'skip', 'not found'); }
+    } catch(e) { showSrcRow('talks', '', 'skip', 'not found'); }
+  } else {
+    showSrcRow('web', '', 'skip', 'needs API key');
+    showSrcRow('talks', '', 'skip', 'needs API key');
+  }
 
-    var withAbstract = fetchedPapers.filter(function(p){return p.abstract;}).length;
-    statsEl.innerHTML =
-      '<div class="pstat"><div class="pstat-num">'+fetchedPapers.length+'</div><div class="pstat-label">Total papers</div></div>' +
-      '<div class="pstat"><div class="pstat-num" style="color:#2e7d32">'+withAbstract+'</div><div class="pstat-label green">With abstract</div></div>' +
-      '<div class="pstat"><div class="pstat-num" style="color:#1a5fa8">'+extraCounts.biorxiv+'</div><div class="pstat-label" style="color:#1a5fa8">bioRxiv</div></div>' +
-      '<div class="pstat"><div class="pstat-num">'+extraCounts.pubmed+'</div><div class="pstat-label">PubMed</div></div>' +
-      (extraCounts.openalexCitations!==null?'<div class="pstat"><div class="pstat-num">'+(extraCounts.openalexCitations/1000).toFixed(1)+'k</div><div class="pstat-label">OA citations</div></div>':'')+
-      (extraCounts.orcid?'<div class="pstat"><div class="pstat-num" style="color:#2e7d32;font-size:14px;">✓</div><div class="pstat-label green">ORCID found</div></div>':'');
-    var top20 = fetchedPapers.slice(0,20);
-    var rows = top20.map(function(p){
-      return '<tr><td>'+p.title+'</td><td style="white-space:nowrap">'+(p.year||'—')+'</td>' +
-        '<td style="color:var(--muted);font-size:12px">'+(p.venue||'—')+'</td>' +
-        '<td style="font-family:var(--mono);font-size:12px;text-align:right">'+p.citations.toLocaleString()+'</td>' +
-        '<td><span class="'+(p.source==='biorxiv'?'arxiv-badge':p.source==='pubmed'?'arxiv-badge':'abs-badge')+'">'+(p.source==='biorxiv'?'bioRxiv':p.source==='pubmed'?'PubMed':'abstract')+'</span></td></tr>';
-    }).join('');
-    listEl.innerHTML = '<table class="papers-table"><thead><tr><th>Title</th><th>Year</th><th>Venue</th><th>Citations</th><th>Data</th></tr></thead><tbody>'+rows+'</tbody></table>' +
-      (fetchedPapers.length>20?'<span class="show-more">+ '+(fetchedPapers.length-20)+' more included in distillation</span>':'');
-    // Update confidence bar
-    document.getElementById('confidence-bar').style.display = 'block';
-    document.getElementById('confidence-items').innerHTML =
-      '<span class="conf-item found">✓ Semantic Scholar: '+fetchedPapers.filter(function(p){return !p.source;}).length+' papers</span>' +
-      (extraCounts.biorxiv?'<span class="conf-item found">✓ bioRxiv: '+extraCounts.biorxiv+' preprints</span>':'<span class="conf-item missing">— bioRxiv: none found</span>') +
-      (extraCounts.pubmed?'<span class="conf-item found">✓ PubMed: '+extraCounts.pubmed+' papers</span>':'<span class="conf-item missing">— PubMed: none found</span>') +
-      (extraCounts.orcid?'<span class="conf-item found">✓ ORCID profile found</span>':'<span class="conf-item missing">— ORCID: not found</span>') +
-      (extraCounts.openalexCitations!==null?'<span class="conf-item found">✓ OpenAlex: '+extraCounts.openalexCitations.toLocaleString()+' citations, '+extraCounts.openalexWorks+' works</span>':'<span class="conf-item missing">— OpenAlex: not found</span>') +
-      '<span class="conf-item missing">— Talks/interviews: web search will attempt</span>';
-  } catch(e) { statsEl.innerHTML=''; listEl.innerHTML='<div class="status-msg">✗ '+e.message+'</div>'; }
+  // Render paper stats
+  var withAbs = papers.filter(function(p) { return p.abstract; }).length;
+  document.getElementById('pstats').innerHTML =
+    '<div class="pstat"><div class="pstat-n">' + papers.length + '</div><div class="pstat-l">Total papers</div></div>' +
+    '<div class="pstat"><div class="pstat-n" style="color:#2e7d32">' + withAbs + '</div><div class="pstat-l g">With abstract</div></div>' +
+    '<div class="pstat"><div class="pstat-n">' + papers.filter(function(p){return p.source==='bx';}).length + '</div><div class="pstat-l">bioRxiv</div></div>' +
+    (oaCitations !== null ? '<div class="pstat"><div class="pstat-n">' + (oaCitations / 1000).toFixed(1) + 'k</div><div class="pstat-l">OA citations</div></div>' : '');
+
+  var top20 = papers.slice(0, 20);
+  var rows = top20.map(function(p) {
+    var bcls = p.source === 'bx' ? 'bx' : p.source === 'pm' ? 'pm' : '';
+    var blbl = p.source === 'bx' ? 'bioRxiv' : p.source === 'pm' ? 'PubMed' : 'abstract';
+    return '<tr><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.title + '</td><td style="white-space:nowrap">' + (p.year || '—') + '</td><td style="font-size:11px;color:var(--muted)">' + (p.venue || '—') + '</td><td style="font-family:var(--mono);font-size:11px;text-align:right">' + p.citations.toLocaleString() + '</td><td><span class="sbadge ' + bcls + '">' + blbl + '</span></td></tr>';
+  }).join('');
+  document.getElementById('papers-list').innerHTML = '<table class="ptable"><thead><tr><th>Title</th><th>Year</th><th>Venue</th><th>Citations</th><th>Source</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    (papers.length > 20 ? '<span style="font-family:var(--mono);font-size:10px;color:var(--muted);">+ ' + (papers.length - 20) + ' more included in distillation</span>' : '');
+
+  document.getElementById('paste-box').style.display = 'block';
 }
 
 function resetSearch() {
-  selectedAuthor=null; fetchedPapers=[];
-  document.getElementById('step-papers').style.display='none';
-  document.getElementById('author-candidates').innerHTML='';
-  document.getElementById('search-status').textContent='';
-  document.getElementById('papers-stats').innerHTML='';
-  document.getElementById('papers-list').innerHTML='';
-  document.getElementById('confidence-bar').style.display='none';
-  document.getElementById('paste-section').style.display='none';
-  document.getElementById('paste-materials').value='';
+  selAuthor = null; papers = []; publicSources = {};
+  document.getElementById('step-papers').style.display = 'none';
+  document.getElementById('author-candidates').innerHTML = '';
+  document.getElementById('search-status').textContent = '';
+  document.getElementById('src-progress').innerHTML = '';
+  document.getElementById('pstats').innerHTML = '';
+  document.getElementById('papers-list').innerHTML = '';
+  document.getElementById('paste-box').style.display = 'none';
+  document.getElementById('paste-area').value = '';
 }
 
-// ── DISTILL ───────────────────────────────────────────────
 function switchTab(mode) {
-  currentTab = mode;
-  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',i===(mode==='lab'?0:1));});
-  document.getElementById('panel-lab').classList.toggle('active',mode==='lab');
-  document.getElementById('panel-field').classList.toggle('active',mode==='field');
-  document.getElementById('progress').style.display='none';
-  document.getElementById('output-wrap').style.display='none';
+  curTab = mode;
+  document.querySelectorAll('.tab').forEach(function(t, i) { t.classList.toggle('active', i === (mode === 'lab' ? 0 : 1)); });
+  document.getElementById('panel-lab').classList.toggle('active', mode === 'lab');
+  document.getElementById('panel-field').classList.toggle('active', mode === 'field');
+  document.getElementById('prog').style.display = 'none';
+  document.getElementById('owrap').style.display = 'none';
 }
 
-document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){c.classList.toggle('on');});});
-function getChips(id){return Array.from(document.querySelectorAll('#'+id+' .chip.on')).map(function(c){return c.dataset.v;}).join(', ');}
+document.querySelectorAll('.chip').forEach(function(c) { c.addEventListener('click', function() { c.classList.toggle('on'); }); });
+function getChips(id) { return Array.from(document.querySelectorAll('#' + id + ' .chip.on')).map(function(c) { return c.dataset.v; }).join(', '); }
 
-function setStep(n){
-  for(var i=1;i<=5;i++){
-    var el=document.getElementById('ps'+i);
-    el.classList.remove('active','done');
-    if(i<n)el.classList.add('done');
-    else if(i===n)el.classList.add('active');
+function setStep(n) {
+  for (var i = 1; i <= 5; i++) {
+    var el = document.getElementById('ps' + i);
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    else if (i === n) el.classList.add('active');
   }
 }
 
 function buildPrompt() {
-  if (currentTab === 'lab') {
-    if (!selectedAuthor) return null;
-    var top = fetchedPapers.filter(function(p){return p.abstract;}).slice(0,10);
-    var papersText = top.map(function(p,i){
-      return '[P'+(i+1)+'] "'+p.title+'" ('+( p.year||'?')+', '+(p.venue||'?')+', '+p.citations+' citations)\n'+p.abstract.slice(0,400);
+  if (curTab === 'lab') {
+    if (!selAuthor) return null;
+    var top = papers.filter(function(p) { return p.abstract; }).slice(0, 10);
+    var papersText = top.map(function(p, i) {
+      return '[P' + (i + 1) + '] "' + p.title + '" (' + (p.year || '?') + ', ' + (p.venue || '?') + ', ' + p.citations + ' citations)\n' + p.abstract.slice(0, 400);
     }).join('\n\n---\n\n');
-    var goals = getChips('lab-goals')||'topic selection, writing style';
-    currentFilename = selectedAuthor.name.replace(/\s+/g,'-').toLowerCase()+'.skill.md';
-    var pasteText = document.getElementById('paste-materials').value.trim();
-    return `You are building a deep persona distillation of ${selectedAuthor.name}${selectedAuthor.affiliation?' ('+selectedAuthor.affiliation+')':''}.
+    var goals = getChips('lab-goals') || 'topic selection, writing style';
+    var pasteText = document.getElementById('paste-area').value.trim();
+    filename = selAuthor.name.replace(/\s+/g, '-').toLowerCase() + '.skill.md';
 
-Run SIX parallel research dimensions using web search. These are designed specifically for academic researchers in cognitive/behavioral neuroscience:
+    var websiteInfo = publicSources.website ? '\n\nLAB WEBSITE / HOMEPAGE:\n' + publicSources.website : '';
+    var talksInfo = publicSources.talks ? '\n\nPUBLIC TALKS & INTERVIEWS:\n' + publicSources.talks : '';
+    var pasteInfo = pasteText ? '\n\nUSER-PROVIDED MATERIALS (highest priority):\n' + pasteText.slice(0, 2000) : '';
 
-DIMENSION 1 — EPISTEMOLOGICAL STANCE
-Search: "${selectedAuthor.name}" evidence methodology causal correlation behavioral neural
-What counts as convincing evidence to them? Do they privilege neural or behavioral data? Correlational or causal designs? What do they say about replication?
-
-DIMENSION 2 — THEORETICAL COMMITMENTS
-Search: "${selectedAuthor.name}" theory framework model computational dual-process
-Which theoretical frameworks do they work within or push against? What assumptions do they treat as given vs. question?
-
-DIMENSION 3 — PEER NETWORK & INTELLECTUAL INFLUENCES
-Search: "${selectedAuthor.name}" collaboration co-author influences trained mentor
-Who do they cite most? Who trained them? Who do they collaborate with? This reveals their intellectual circle and blind spots.
-
-DIMENSION 4 — REVIEWING & PUBLICATION STANDARDS
-Search: "${selectedAuthor.name}" peer review standards rigor open science preregistration
-What do they say about what makes a publishable paper? Any known editorial roles or public statements about reviewing?
-
-DIMENSION 5 — REPRODUCIBILITY & OPEN SCIENCE STANCE
-Search: "${selectedAuthor.name}" replication crisis open science preregistration OSF data sharing
-Where do they stand on open science practices? Have they preregistered studies? What's their view on the replication crisis in their field?
-
-DIMENSION 6 — CONTROVERSIES & INTELLECTUAL DISAGREEMENTS
-Search: "${selectedAuthor.name}" controversy criticism debate response rebuttal challenged
-Has their work been challenged or replicated? Have they publicly disagreed with others? How do they respond to criticism?
-
-Cross-validate across dimensions. Mark HIGH confidence where 3+ sources agree, MED for 1-2 sources, LOW for inferred only.
-
-PHASE 2 — Synthesize all 6 dimensions + the ${top.length} papers below${pasteText?' + USER-PROVIDED MATERIALS (treat as highest quality source)':''}.`
-
-Researcher stats: h-index ${selectedAuthor.hIndex}, ${(selectedAuthor.citationCount||0).toLocaleString()} citations
-Skill purposes: ${goals}
-
-Papers:
-${papersText}
-${pasteText ? '\n\n## USER-PROVIDED SOURCE MATERIAL (highest priority)\n' + pasteText.slice(0, 3000) : ''}
-
-RULES:
-- Cite paper numbers [P1] etc. for claims from papers
-- Note source (talk/interview/website) for persona claims
-- Mark confidence: ⬛⬛⬛ HIGH (3+ sources) / ⬜⬛⬛ MED (1-2 sources) / ⬜⬜⬛ LOW (inferred)
-- Be honest about what couldn't be found
-
-Output ONLY this CLAUDE.md:
-
----
-name: ${selectedAuthor.name.replace(/\s+/g,'-').toLowerCase()}.skill
-description: |
-  When to use: Conversations with ${selectedAuthor.name}'s persona. Research evaluation through their lens.
-  When NOT to use: As biographical fact — this is a persona model.
----
-
-# ${selectedAuthor.name} — Research Persona Skill
-
-## Distillation Report
-| Source | Status |
-|--------|--------|
-| Semantic Scholar papers | ${fetchedPapers.length} papers, ${top.length} with abstracts |
-| Talks / lectures | [found/not found — list if found] |
-| Interviews / podcasts | [found/not found — list if found] |
-| Lab / personal website | [found/not found — URL if found] |
-| Social media / blog | [found/not found] |
-
-**Overall confidence: [HIGH/MED/LOW]** — [one sentence reason]
-
-## Epistemological Stance ⬛⬛⬛/⬜
-[What counts as convincing evidence to them? Neural vs behavioral? Causal vs correlational? What methodology do they distrust? Cite [P1] and talks/interviews.]
-
-## Theoretical Commitments ⬛⬛⬛/⬜
-[Which frameworks do they work within? What assumptions do they treat as given? What theories do they push against? Be specific — name the frameworks.]
-
-## Peer Network & Intellectual Lineage ⬛⬛⬛/⬜
-[Who trained them? Key collaborators? Who do they cite most heavily? This shapes their blind spots and priors. From ORCID, co-author lists, acknowledgements.]
-
-## Publication & Reviewing Standards ⬛⬛⬛/⬜
-[What do they consider a publishable contribution? Any known editorial standards or public statements about peer review? What makes them reject a paper?]
-
-## Open Science & Reproducibility Stance ⬛⬛⬛/⬜
-[Preregistration practice? OSF presence? Public stance on replication crisis? Data sharing behavior? This is increasingly important in cognitive neuroscience.]
-
-## Controversies & How They Handle Disagreement ⬛⬛⬛/⬜
-[Has their work been challenged? Have they publicly disputed others? How do they respond to criticism — defensively, openly, with data? Cite specific instances if found.]
-
-## Research Taste: What Excites vs. Bores Them ⬛⬛⬛/⬜
-[Concrete research scenarios based on demonstrated taste. What kind of question would make them lean forward? What would make them tune out?]
-
-## Blind Spots in This Distillation ⬜⬜⬜
-[Be honest: what couldn't be found? Which dimensions had LOW confidence? Where is this persona model most likely to be wrong?]
-
-## Voice Sample
-[2-3 sentences AS this researcher answering: "What's the most important methodological problem in your field right now?" — mark clearly if extrapolated from indirect evidence]
-
-## Top Papers by Citation
-| Citations | Year | Title | Venue |
-|-----------|------|-------|-------|
-[top 10 from provided data]`;
+    return 'You are building a deep academic persona distillation of ' + selAuthor.name + (selAuthor.affiliation ? ' (' + selAuthor.affiliation + ')' : '') + '.\n\nResearcher stats: h-index ' + selAuthor.hIndex + ', ' + (selAuthor.citationCount || 0).toLocaleString() + ' citations\nSkill purposes: ' + goals + '\n\nYou have been provided:\n- ' + top.length + ' papers with abstracts (see below)\n- Auto-searched public sources (website, talks, interviews)' + (pasteText ? '\n- User-provided supplementary materials' : '') + '\n\nPlus, run additional web searches to fill gaps:\n1. Search: "' + selAuthor.name + '" research philosophy methodology evidence\n2. Search: "' + selAuthor.name + '" replication open science preregistration OSF\n3. Search: "' + selAuthor.name + '" controversy debate criticism challenged\n\nSYNTHESIS TASK:\nAnalyze all sources and extract:\n1. Epistemological stance — what counts as convincing evidence to them?\n2. Theoretical commitments — which frameworks do they work within?\n3. Methodological beliefs — what designs do they trust/distrust?\n4. Reviewing standards — what makes a paper publishable in their view?\n5. Open science stance — preregistration, data sharing practices\n6. Agentic Protocol — derived from the above: when answering research questions, what should be searched first, and why? Make this SPECIFIC to this researcher\'s standards.\n\nRULES:\n- Cite paper numbers [P1] for claims from papers\n- Mark confidence: HIGH (3+ sources) / MED (1-2) / LOW (inferred)\n- Be honest about gaps\n- The Agentic Protocol must reflect THIS researcher\'s specific epistemic standards, not generic searches\n\nPAPERS:\n' + papersText + websiteInfo + talksInfo + pasteInfo + '\n\nOutput ONLY this complete CLAUDE.md file:\n\n---\nname: ' + selAuthor.name.replace(/\s+/g, '-').toLowerCase() + '.skill\ndescription: |\n  When to use: Conversations with ' + selAuthor.name + '\'s academic persona. Research evaluation through their lens.\n  When NOT to use: As biographical fact — this is a persona model built from public sources.\n---\n\n# ' + selAuthor.name + ' — Academic Research Skill\n\n## Distillation Report\n| Source | Status | Details |\n|--------|--------|---------|\n| Semantic Scholar | found | ' + papers.filter(function(p){return p.source==='ss';}).length + ' papers |\n| bioRxiv | [found/not found] | [count if found] |\n| PubMed | [found/not found] | [count if found] |\n| Lab website | [found/not found] | [URL or note] |\n| Public talks | [found/not found] | [summary or note] |\n| Web search | completed | 3 targeted searches |\n\n**Overall confidence: [HIGH/MED/LOW]** — [one sentence reason]\n\n## Epistemological Stance [HIGH/MED/LOW]\n[What counts as convincing evidence? Neural vs behavioral? Causal vs correlational? What methodology do they distrust? Cite [P1] etc.]\n\n## Theoretical Commitments [HIGH/MED/LOW]\n[Which frameworks do they commit to? What assumptions do they treat as given? What theories do they push against? Name specific frameworks.]\n\n## Methodological Toolkit [HIGH/MED/LOW]\n[Preferred paradigms, designs, statistical approaches. What they trust and distrust. Cite papers.]\n\n## Reviewing & Publication Standards [HIGH/MED/LOW]\n[What makes a paper publishable? What would make them reject? Any known editorial roles or public statements?]\n\n## Open Science Stance [HIGH/MED/LOW]\n[Preregistration practice? Data sharing? Stance on replication crisis? OSF presence?]\n\n## Research Taste [HIGH/MED/LOW]\n[What excites vs bores them? Concrete scenarios based on demonstrated taste.]\n\n## Agentic Protocol\n[CRITICAL: Derive this from the sections above. When answering research questions, this PI should search in this specific order, for these specific reasons rooted in their epistemic standards.]\n\nWhen evaluating a research idea or design:\n1. Search: [specific query derived from their epistemological stance] — because [reason tied to their standards]\n2. Search: [specific query derived from their methodological toolkit] — because [reason]\n3. Search: [specific query for their key theoretical framework] — because [reason]\n\nWhen discussing a paper:\n1. [What they check first and why]\n2. [What they check second and why]\n\nWhen asked about their field:\n1. [How they orient themselves before answering]\n\n## Blind Spots\n[What could not be extracted reliably? Where is this persona model likely wrong?]\n\n## Voice Sample\n[2-3 sentences AS this researcher answering: "What is the most important unsolved methodological problem in your field?" — mark if extrapolated]\n\n## Top Papers\n| Citations | Year | Title | Venue |\n|-----------|------|-------|\n[top 10 from provided data]';
   } else {
     var fname = document.getElementById('field-name').value.trim();
     if (!fname) return null;
     var fyear = document.getElementById('field-year').value.trim();
     var fjournals = document.getElementById('field-journals').value.trim();
     var fangle = document.getElementById('field-angle').value.trim();
-    var goals2 = getChips('field-goals')||'topic patterns, method conventions';
-    currentFilename = fname.replace(/\s+/g,'-').toLowerCase().slice(0,30)+'-field.skill.md';
-    return 'Distill the research field "'+fname+'" into a Claude Code Skill file.\nTime: '+(fyear||'2019-2024')+(fjournals?'\nJournals: '+fjournals:'')+(fangle?'\nAngle: '+fangle:'')+'\nExtract: '+goals2+'\nSearch for: highest-cited papers,reviews:reviews, meta-analyses, future-directions.\nOutput ONLY CLAUDE.md with sections: Field Overview, Dominant Research Patterns, What Gets Published in Top Journals, Underexplored Gaps, Methodological Standards, Framing Conventions, Topic Templates, Reviewer Expectations, Key Papers.';
+    var goals2 = getChips('field-goals') || 'topic patterns, method conventions';
+    filename = fname.replace(/\s+/g, '-').toLowerCase().slice(0, 30) + '-field.skill.md';
+    return 'Distill the research field "' + fname + '" into a Claude Code Skill file.\nTime: ' + (fyear || '2019-2024') + (fjournals ? '\nJournals: ' + fjournals : '') + (fangle ? '\nAngle: ' + fangle : '') + '\nExtract: ' + goals2 + '\nSearch for highest-cited papers, reviews, meta-analyses, future-directions sections.\nOutput ONLY CLAUDE.md with sections: Field Overview, Dominant Research Patterns, What Gets Published in Top Journals, Underexplored Gaps, Methodological Standards, Framing Conventions, Topic Templates, Reviewer Expectations, Key Papers.';
   }
 }
 
 async function runDistill() {
   if (!requireKey()) return;
   var prompt = buildPrompt();
-  var statusMsg = document.getElementById('status-msg');
+  var msg = document.getElementById('run-msg');
   if (!prompt) {
-    statusMsg.textContent = currentTab==='lab' ? 'Search and select a researcher first' : 'Enter a research domain';
+    msg.textContent = curTab === 'lab' ? 'Search and select a researcher first' : 'Enter a research domain';
     return;
   }
   var btn = document.getElementById('btn-run');
-  var prog = document.getElementById('progress');
-  var outWrap = document.getElementById('output-wrap');
-  btn.disabled=true; statusMsg.textContent=''; prog.style.display='block'; outWrap.style.display='none'; setStep(1);
-  var timers=[setTimeout(function(){setStep(2);},8000),setTimeout(function(){setStep(3);},20000),setTimeout(function(){setStep(4);},35000)];
+  var prog = document.getElementById('prog');
+  var owrap = document.getElementById('owrap');
+  btn.disabled = true; msg.textContent = ''; prog.style.display = 'block'; owrap.style.display = 'none'; setStep(1);
+  var timers = [setTimeout(function(){setStep(2);},8000), setTimeout(function(){setStep(3);},20000), setTimeout(function(){setStep(4);},35000)];
   try {
-    var text = await callClaude([{role:'user',content:prompt}],{useWebSearch:true,maxTokens:3000});
+    var text = await callClaude([{ role: 'user', content: prompt }], { webSearch: true, maxTokens: 3000 });
     timers.forEach(clearTimeout); setStep(5);
     if (!text) throw new Error('No output from model');
     generated = text;
-    document.getElementById('output-rendered').innerHTML = marked.parse(text);
-    document.getElementById('output-label').textContent = 'SKILL OUTPUT — '+currentFilename.toUpperCase();
-    outWrap.style.display='block';
-    outWrap.scrollIntoView({behavior:'smooth',block:'start'});
-    Array.from(document.querySelectorAll('.p-step')).forEach(function(el){el.classList.remove('active');el.classList.add('done');});
-    // Run quality tests
-    if (currentTab==='lab' && selectedAuthor) {
-      runQualityTests(text, selectedAuthor);
-    }
+    document.getElementById('omd').innerHTML = marked.parse(text);
+    document.getElementById('otitle').textContent = 'SKILL OUTPUT — ' + filename.toUpperCase();
+    owrap.style.display = 'block';
+    owrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    Array.from(document.querySelectorAll('.pstep')).forEach(function(el) { el.classList.remove('active'); el.classList.add('done'); });
   } catch(e) {
     timers.forEach(clearTimeout);
-    statusMsg.textContent='✗ '+e.message;
-    prog.style.display='none';
+    msg.textContent = 'Error: ' + e.message;
+    prog.style.display = 'none';
   }
-  btn.disabled=false;
+  btn.disabled = false;
 }
 
-async function runQualityTests(skillContent, researcher) {
-  var qr = document.getElementById('quality-report');
-  var qrBody = document.getElementById('qr-body');
-  var qrScore = document.getElementById('qr-score');
-  qr.style.display='block';
-  qrBody.innerHTML='<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:8px 0;">Running verification tests...</div>';
-  var tests = [
-    {name:'Epistemological stance', prompt:'Based only on the skill profile, what does '+researcher.name+' consider the gold standard of evidence in their field? Be specific about what methodology or design they favor and why.'},
-    {name:'Theoretical commitment', prompt:'According to the skill, which specific theoretical framework does '+researcher.name+' most deeply commit to? Name it and describe what that commitment implies for how they interpret results.'},
-    {name:'Boundary test (outside expertise)', prompt:'Someone asks '+researcher.name+' to evaluate a study on cryptocurrency trading behavior and neural correlates of financial risk. Based on the skill, how would they respond — what would they say and what concerns would they raise?'},
-    {name:'Reviewing standard', prompt:'Based on the skill, what is the single most important criterion '+researcher.name+' would use to decide whether to accept or reject a paper as a reviewer? Give a concrete, specific answer.'},
-    {name:'Open science stance', prompt:'Based on the skill, where does '+researcher.name+' stand on preregistration and data sharing? Would they require it of papers they review? Have they practiced it themselves?'},
-  ];
-  var results = [];
-  var passed = 0;
-  for (var i=0;i<tests.length;i++) {
-    var t = tests[i];
-    try {
-      var reply = await callClaude(
-        [{role:'user',content:'Using this researcher skill profile:
-
-'+skillContent.slice(0,2000)+'
-
-Question: '+t.prompt+'
-
-Answer in 2-3 sentences. Be specific. If the skill profile does not contain enough information to answer confidently, say so explicitly.'}],
-        null, 200
-      );
-      var hasInfo = !reply.toLowerCase().includes('not enough information') &&
-        !reply.toLowerCase().includes('not explicitly') &&
-        !reply.toLowerCase().includes('cannot determine') &&
-        !reply.toLowerCase().includes('unclear from') &&
-        reply.length > 60;
-      if (hasInfo) passed++;
-      results.push({name:t.name,result:reply,pass:hasInfo});
-    } catch(e) {
-      results.push({name:t.name,result:'Error: '+e.message,pass:false});
-    }
-  }
-  var pct = Math.round(passed/tests.length*100);
-  qrScore.textContent = pct+'%';
-  qrBody.innerHTML = results.map(function(r){
-    return '<div class="qr-test">'+
-      '<div class="qr-status">'+(r.pass?'✓':'✗')+'</div>'+
-      '<div><div class="qr-test-name">'+r.name+'</div>'+
-      '<div class="qr-test-result">'+escHtml(r.result)+'</div></div></div>';
-  }).join('');
-}
-
-function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-function copyOut(){navigator.clipboard.writeText(generated).then(function(){var b=event.target;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy raw';},1500);});}
-function downloadOut(){var blob=new Blob([generated],{type:'text/markdown'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=currentFilename;a.click();}
-
+function copyOut() { navigator.clipboard.writeText(generated).then(function() { var b = event.target; b.textContent = 'Copied!'; setTimeout(function() { b.textContent = 'Copy'; }, 1500); }); }
+function downloadOut() { var blob = new Blob([generated], { type: 'text/markdown' }); var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); }
 function saveAndChat() {
-  if (!generated || !selectedAuthor) return;
-  var skills = JSON.parse(localStorage.getItem('labskill_skills')||'[]');
-  var id = 'skill-'+Date.now();
-  skills.unshift({id:id,name:selectedAuthor.name,affiliation:selectedAuthor.affiliation||'',hIndex:selectedAuthor.hIndex||0,citationCount:selectedAuthor.citationCount||0,skillContent:generated,savedAt:new Date().toISOString()});
-  if (skills.length>20) skills=skills.slice(0,20);
-  localStorage.setItem('labskill_skills',JSON.stringify(skills));
-  window.location.href='chat.html';
+  if (!generated || !selAuthor) return;
+  var skills = JSON.parse(localStorage.getItem('labskill_skills') || '[]');
+  var id = 'skill-' + Date.now();
+  skills.unshift({ id: id, name: selAuthor.name, affiliation: selAuthor.affiliation || '', hIndex: selAuthor.hIndex || 0, citationCount: selAuthor.citationCount || 0, skillContent: generated, savedAt: new Date().toISOString() });
+  if (skills.length > 20) skills = skills.slice(0, 20);
+  localStorage.setItem('labskill_skills', JSON.stringify(skills));
+  window.location.href = 'chat.html';
 }
 
-document.getElementById('lab-who').addEventListener('keydown',function(e){if(e.key==='Enter')searchAuthor();});
-document.getElementById('field-input').addEventListener('keydown',function(e){if(e.key==='Enter')discoverLabs();});
+document.getElementById('lab-who').addEventListener('keydown', function(e) { if (e.key === 'Enter') searchAuthor(); });
+document.getElementById('disc-in').addEventListener('keydown', function(e) { if (e.key === 'Enter') discoverLabs(); });
 </script>
 </body>
 </html>
