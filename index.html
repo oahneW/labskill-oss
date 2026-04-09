@@ -557,11 +557,7 @@ async function discoverLabs() {
     }
     var rs;
     try { rs = JSON.parse(clean.slice(s, e2 + 1)); }
-    catch(pe) {
-      // Try to extract just valid JSON
-      var jsonStr = clean.slice(s, e2 + 1).replace(/[ --]/g, ' ');
-      rs = JSON.parse(jsonStr);
-    }
+    catch(pe) { throw new Error("Could not parse results — please try again"); }
     status.textContent = 'Found ' + rs.length + ' top researchers in "' + field + '"';
     results.innerHTML = '<div class="lgrid">' + rs.map(function(r, i) {
       var tags = (r.tags || []).map(function(t) { return '<span class="ltag">' + t + '</span>'; }).join('');
