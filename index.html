@@ -624,7 +624,7 @@ async function discoverLabs() {
   status.textContent = 'Searching for top researchers...';
   results.innerHTML = skeletonHTML();
   try {
-    const prompt = `Find the top 12 most influential researchers in: "${field:field}". Use web search to find real data.
+    const prompt = `Find the top 12 most influential researchers in: "${field}". Use web search to find real data.
 Return ONLY a valid JSON array, no markdown, no explanation:
 [{"name":"Full Name","institution":"University","country":"Country","hIndex":45,"citations":12000,"focus":"3-5 word description","tags":["tag1","tag2","tag3"]}]
 Sort by impact. Include diverse institutions. Return exactly 12.`;
@@ -907,10 +907,10 @@ Cross-validate across dimensions. Mark HIGH confidence where 3+ sources agree, M
 PHASE 2 — Synthesize all 6 dimensions + the ${top.length} papers below${pasteText?' + USER-PROVIDED MATERIALS (treat as highest quality source)':''}.`
 
 Researcher stats: h-index ${selectedAuthor.hIndex}, ${(selectedAuthor.citationCount||0).toLocaleString()} citations
-Skill purposes: ${goals:goals}
+Skill purposes: ${goals}
 
 Papers:
-${papersText:papersText}
+${papersText}
 ${pasteText ? '\n\n## USER-PROVIDED SOURCE MATERIAL (highest priority)\n' + pasteText.slice(0, 3000) : ''}
 
 RULES:
