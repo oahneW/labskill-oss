@@ -182,6 +182,11 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:0 48px;}
 footer{border-top:1px solid var(--border);padding:32px 48px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);font-family:var(--mono);}
 footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--border);}
 
+.qtest{padding:12px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;}
+.qtest:last-child{border-bottom:none;}
+.qtest-icon{font-family:var(--mono);font-size:13px;width:20px;flex-shrink:0;}
+.qtest-name{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:3px;letter-spacing:.04em;}
+.qtest-result{font-size:13px;line-height:1.6;color:var(--ink);}
 @media(max-width:768px){
   nav,footer{padding:14px 20px;}
   .hero,.sec{padding-left:20px;padding-right:20px;}
@@ -335,6 +340,7 @@ footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--b
       <div class="selbar" id="selbar"></div>
       <div class="src-progress" id="src-progress"></div>
       <div class="pstats" id="pstats"></div>
+      <div id="citation-network" style="display:none;background:white;border:1px solid var(--border);border-left:3px solid var(--ink);padding:14px 16px;margin-bottom:16px;"></div>
       <div id="papers-list"></div>
       <div class="paste-box" id="paste-box" style="display:none;">
         <div class="paste-title">Supplementary materials</div>
@@ -396,11 +402,21 @@ footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--b
       <div class="oactions">
         <button class="obtn" onclick="copyOut()">Copy</button>
         <button class="obtn" onclick="downloadOut()">Download .md</button>
+        <button class="obtn" onclick="runQualityCheck()" id="btn-quality">Validate quality</button>
+        <button class="obtn" onclick="compareVersions()" id="btn-compare" style="display:none;">Compare versions</button>
         <button class="obtn hi" onclick="saveAndChat()">Save and Chat</button>
       </div>
     </div>
     <div class="obody"><div class="md" id="omd"></div></div>
   </div>
+</div>
+
+<div class="owrap" id="quality-wrap" style="display:none;margin-bottom:0;">
+  <div class="ohead" style="background:#2e7d32;">
+    <div class="otitle">QUALITY VALIDATION</div>
+    <div class="oactions"><span id="quality-score" style="font-family:var(--mono);font-size:13px;"></span></div>
+  </div>
+  <div class="obody" id="quality-body"></div>
 </div>
 
 <hr class="dv">
@@ -703,6 +719,55 @@ async function selectAuthor(author) {
     } else { showSrcRow('oa', '', 'skip', 'not found'); }
   } catch(e) { showSrcRow('oa', '', 'skip', 'not found'); }
 
+  // Fetch citation network from Semantic Scholar
+  var citationNetwork = {cites:[], citedBy:[], coauthors:[], critics:[]};
+  try {
+    // Get papers this author cites most (references)
+    var refUrl = 'https://api.semanticscholar.org/graph/v1/author/' + author.authorId + '/papers?fields=references.authors&limit=10';
+    var refR = await fetch(refUrl, {headers:{'User-Agent':'LabSkill/1.0'}});
+    if (refR.ok) {
+      var refD = await refR.json();
+      var citeCounts = {};
+      ((refD.data)||[]).forEach(function(paper) {
+        ((paper.references)||[]).forEach(function(ref) {
+          ((ref.authors)||[]).forEach(function(a) {
+            if (a.authorId !== author.authorId) {
+              citeCounts[a.name] = (citeCounts[a.name]||0) + 1;
+            }
+          });
+        });
+      });
+      citationNetwork.cites = Object.entries(citeCounts)
+        .sort(function(a,b){return b[1]-a[1];})
+        .slice(0,5)
+        .map(function(e){return {name:e[0], count:e[1]};});
+    }
+  } catch(e) { console.warn('Citation network failed', e); }
+
+  // Get co-authors from papers
+  try {
+    var coaUrl = 'https://api.semanticscholar.org/graph/v1/author/' + author.authorId + '/papers?fields=authors&limit=20';
+    var coaR = await fetch(coaUrl, {headers:{'User-Agent':'LabSkill/1.0'}});
+    if (coaR.ok) {
+      var coaD = await coaR.json();
+      var coaCounts = {};
+      ((coaD.data)||[]).forEach(function(paper) {
+        ((paper.authors)||[]).forEach(function(a) {
+          if (a.authorId !== author.authorId && a.name) {
+            coaCounts[a.name] = (coaCounts[a.name]||0) + 1;
+          }
+        });
+      });
+      citationNetwork.coauthors = Object.entries(coaCounts)
+        .sort(function(a,b){return b[1]-a[1];})
+        .slice(0,5)
+        .map(function(e){return {name:e[0], count:e[1]};});
+    }
+  } catch(e) { console.warn('Co-author fetch failed', e); }
+
+  // Store for use in distillation
+  window._citationNetwork = citationNetwork;
+
   // Auto-search: lab website + talks/interviews (using Claude web search, silent on failure)
   if (requireKey()) {
     try {
@@ -744,6 +809,25 @@ async function selectAuthor(author) {
   document.getElementById('papers-list').innerHTML = '<table class="ptable"><thead><tr><th>Title</th><th>Year</th><th>Venue</th><th>Citations</th><th>Source</th></tr></thead><tbody>' + rows + '</tbody></table>' +
     (papers.length > 20 ? '<span style="font-family:var(--mono);font-size:10px;color:var(--muted);">+ ' + (papers.length - 20) + ' more included in distillation</span>' : '');
 
+  // Render citation network
+  if (citationNetwork.cites.length || citationNetwork.coauthors.length) {
+    var netEl = document.getElementById('citation-network');
+    if (netEl) {
+      var netHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">';
+      if (citationNetwork.cites.length) {
+        netHtml += '<div><div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;">Cites most</div>' +
+          citationNetwork.cites.map(function(c){return '<div style="font-size:12px;padding:2px 0;">'+c.name+' <span style="font-family:var(--mono);font-size:9px;color:var(--muted);">×'+c.count+'</span></div>';}).join('') + '</div>';
+      }
+      if (citationNetwork.coauthors.length) {
+        netHtml += '<div><div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;">Top collaborators</div>' +
+          citationNetwork.coauthors.map(function(c){return '<div style="font-size:12px;padding:2px 0;">'+c.name+' <span style="font-family:var(--mono);font-size:9px;color:var(--muted);">×'+c.count+' papers</span></div>';}).join('') + '</div>';
+      }
+      netHtml += '</div>';
+      netEl.innerHTML = netHtml;
+      netEl.style.display = 'block';
+    }
+  }
+
   document.getElementById('paste-box').style.display = 'block';
 }
 
@@ -780,22 +864,76 @@ function setStep(n) {
   }
 }
 
+// Pre-process papers: extract structured insights per paper
+// This runs before the main distillation to get higher-quality inputs
+async function extractPaperInsights(author, paperList) {
+  if (!paperList.length) return [];
+  var insights = [];
+  // Process in batches of 3 to stay under token limits
+  var batches = [];
+  for (var i = 0; i < paperList.length; i += 3) {
+    batches.push(paperList.slice(i, i + 3));
+  }
+  for (var b = 0; b < batches.length; b++) {
+    var batch = batches[b];
+    var batchText = batch.map(function(p, i) {
+      return '[P' + (i+1) + '] ' + p.title + ' (' + (p.year||'?') + ', ' + p.citations + ' citations)\n' + p.abstract;
+    }).join('\n\n');
+    var prompt = 'For each paper below by ' + author.name + ', extract in JSON format:\n' +
+      '[{"title":"...","method":"1-2 sentence description of the main method/paradigm used","finding":"1-2 sentence key finding","contribution":"what theoretical/methodological contribution this makes","evidence_type":"behavioral|neural|computational|review|other"}]\n\n' +
+      'Return ONLY valid JSON array, no markdown.\n\nPapers:\n' + batchText;
+    try {
+      var reply = await callClaude([{role:'user',content:prompt}], null, 600, false);
+      var clean = reply.replace(/```json/g,'').replace(/```/g,'').trim();
+      var s = clean.indexOf('['), e2 = clean.lastIndexOf(']');
+      if (s >= 0 && e2 > s) {
+        var parsed = JSON.parse(clean.slice(s, e2+1));
+        insights = insights.concat(parsed);
+      }
+    } catch(e) {
+      // fallback: use raw abstracts for this batch
+      batch.forEach(function(p) {
+        insights.push({title:p.title, method:'', finding:p.abstract.slice(0,150), contribution:'', evidence_type:'unknown'});
+      });
+    }
+  }
+  return insights;
+}
+
 function buildPrompt() {
   if (curTab === 'lab') {
     if (!selAuthor) return null;
-    var top = papers.filter(function(p) { return p.abstract; }).slice(0, 6);
+    var top = papers.filter(function(p) { return p.abstract; }).slice(0, 9);
+    var insights = window._paperInsights || [];
     var papersText = top.map(function(p, i) {
-      return '[P' + (i + 1) + '] "' + p.title + '" (' + (p.year || '?') + ') ' + p.citations + ' citations\n' + p.abstract.slice(0, 200);
+      var ins = insights[i];
+      if (ins && ins.finding) {
+        return '[P' + (i+1) + '] "' + p.title + '" (' + (p.year||'?') + ', ' + p.citations + ' citations)' +
+          (ins.evidence_type ? ' [' + ins.evidence_type + ']' : '') +
+          (ins.method ? '\nMethod: ' + ins.method : '') +
+          (ins.finding ? '\nFinding: ' + ins.finding : '') +
+          (ins.contribution ? '\nContribution: ' + ins.contribution : '');
+      }
+      return '[P' + (i+1) + '] "' + p.title + '" (' + (p.year||'?') + ', ' + p.citations + ' citations)\n' + p.abstract.slice(0,200);
     }).join('\n\n');
     var goals = getChips('lab-goals') || 'topic selection, writing style';
     var pasteText = document.getElementById('paste-area').value.trim();
     filename = selAuthor.name.replace(/\s+/g, '-').toLowerCase() + '.skill.md';
 
     var websiteInfo = publicSources.website ? '\n\nLAB WEBSITE:\n' + publicSources.website.slice(0, 300) : '';
+    var netData = window._citationNetwork || {};
+    var networkInfo = '';
+    if (netData.cites && netData.cites.length) {
+      networkInfo += '\n\nCITATION NETWORK (from Semantic Scholar):';
+      networkInfo += '\nAuthors this PI cites most: ' + netData.cites.map(function(c){return c.name+' (×'+c.count+')';}).join(', ');
+    }
+    if (netData.coauthors && netData.coauthors.length) {
+      networkInfo += '\nTop co-authors: ' + netData.coauthors.map(function(c){return c.name+' ('+c.count+' papers together)';}).join(', ');
+    }
     var talksInfo = publicSources.talks ? '\n\nTALKS:\n' + publicSources.talks.slice(0, 400) : '';
     var pasteInfo = pasteText ? '\n\nUSER MATERIALS:\n' + pasteText.slice(0, 800) : '';
 
-    return 'You are building a deep academic persona distillation of ' + selAuthor.name + (selAuthor.affiliation ? ' (' + selAuthor.affiliation + ')' : '') + '.\n\nResearcher stats: h-index ' + selAuthor.hIndex + ', ' + (selAuthor.citationCount || 0).toLocaleString() + ' citations\nSkill purposes: ' + goals + '\n\nYou have been provided:\n- ' + top.length + ' papers with abstracts (see below)\n- Auto-searched public sources (website, talks, interviews)' + (pasteText ? '\n- User-provided supplementary materials' : '') + '\n\nPlus, run additional web searches to fill gaps:\n1. Search: "' + selAuthor.name + '" research philosophy methodology evidence\n2. Search: "' + selAuthor.name + '" replication open science preregistration OSF\n3. Search: "' + selAuthor.name + '" controversy debate criticism challenged\n\nSYNTHESIS TASK:\nAnalyze all sources and extract:\n1. Epistemological stance — what counts as convincing evidence to them?\n2. Theoretical commitments — which frameworks do they work within?\n3. Methodological beliefs — what designs do they trust/distrust?\n4. Reviewing standards — what makes a paper publishable in their view?\n5. Open science stance — preregistration, data sharing practices\n6. Agentic Protocol — derived from the above: when answering research questions, what should be searched first, and why? Make this SPECIFIC to this researcher\'s standards.\n\nRULES:\n- Cite paper numbers [P1] for claims from papers\n- Mark confidence: HIGH (3+ sources) / MED (1-2) / LOW (inferred)\n- Be honest about gaps\n- The Agentic Protocol must reflect THIS researcher\'s specific epistemic standards, not generic searches\n\nPAPERS:\n' + papersText + websiteInfo + talksInfo + pasteInfo + '\n\nOutput ONLY this complete CLAUDE.md file:\n\n---\nname: ' + selAuthor.name.replace(/\s+/g, '-').toLowerCase() + '.skill\ndescription: |\n  When to use: Conversations with ' + selAuthor.name + '\'s academic persona. Research evaluation through their lens.\n  When NOT to use: As biographical fact — this is a persona model built from public sources.\n---\n\n# ' + selAuthor.name + ' — Academic Research Skill\n\n## Distillation Report\n| Source | Status | Details |\n|--------|--------|---------|\n| Semantic Scholar | found | ' + papers.filter(function(p){return p.source==='ss';}).length + ' papers |\n| bioRxiv | [found/not found] | [count if found] |\n| PubMed | [found/not found] | [count if found] |\n| Lab website | [found/not found] | [URL or note] |\n| Public talks | [found/not found] | [summary or note] |\n| Web search | completed | 3 targeted searches |\n\n**Overall confidence: [HIGH/MED/LOW]** — [one sentence reason]\n\n## Epistemological Stance [HIGH/MED/LOW]\n[What counts as convincing evidence? Neural vs behavioral? Causal vs correlational? What methodology do they distrust? Cite [P1] etc.]\n\n## Theoretical Commitments [HIGH/MED/LOW]\n[Which frameworks do they commit to? What assumptions do they treat as given? What theories do they push against? Name specific frameworks.]\n\n## Methodological Toolkit [HIGH/MED/LOW]\n[Preferred paradigms, designs, statistical approaches. What they trust and distrust. Cite papers.]\n\n## Reviewing & Publication Standards [HIGH/MED/LOW]\n[What makes a paper publishable? What would make them reject? Any known editorial roles or public statements?]\n\n## Open Science Stance [HIGH/MED/LOW]\n[Preregistration practice? Data sharing? Stance on replication crisis? OSF presence?]\n\n## Research Taste [HIGH/MED/LOW]\n[What excites vs bores them? Concrete scenarios based on demonstrated taste.]\n\n## Agentic Protocol\n[CRITICAL: Derive this from the sections above. When answering research questions, this PI should search in this specific order, for these specific reasons rooted in their epistemic standards.]\n\nWhen evaluating a research idea or design:\n1. Search: [specific query derived from their epistemological stance] — because [reason tied to their standards]\n2. Search: [specific query derived from their methodological toolkit] — because [reason]\n3. Search: [specific query for their key theoretical framework] — because [reason]\n\nWhen discussing a paper:\n1. [What they check first and why]\n2. [What they check second and why]\n\nWhen asked about their field:\n1. [How they orient themselves before answering]\n\n## Blind Spots\n[What could not be extracted reliably? Where is this persona model likely wrong?]\n\n## Voice Sample\n[2-3 sentences AS this researcher answering: "What is the most important unsolved methodological problem in your field?" — mark if extrapolated]\n\n## Top Papers\n| Citations | Year | Title | Venue |\n|-----------|------|-------|\n[top 10 from provided data]';
+    return 'You are building a deep academic persona distillation of ' + selAuthor.name + (selAuthor.affiliation ? ' (' + selAuthor.affiliation + ')' : '') + '.\n\nResearcher stats: h-index ' + selAuthor.hIndex + ', ' + (selAuthor.citationCount || 0).toLocaleString() + ' citations\nSkill purposes: ' + goals + '\n\nYou have been provided:\n- ' + top.length + ' papers with abstracts (see below)\n- Auto-searched public sources (website, talks, interviews)' + (pasteText ? '\n- User-provided supplementary materials' : '') + '\n\nPlus, run additional web searches to fill gaps:\n1. Search: "' + selAuthor.name + '" research philosophy methodology evidence\n2. Search: "' + selAuthor.name + '" replication open science preregistration OSF\n3. Search: "' + selAuthor.name + '" controversy debate criticism challenged\n\nSYNTHESIS TASK:\nAnalyze all sources and extract:\n1. Epistemological stance — what counts as convincing evidence to them?\n2. Theoretical commitments — which frameworks do they work within?\n3. Methodological beliefs — what designs do they trust/distrust?\n4. Reviewing standards — what makes a paper publishable in their view?\n5. Open science stance — preregistration, data sharing practices\n6. Agentic Protocol — derived from the above: when answering research questions, what should be searched first, and why? Make this SPECIFIC to this researcher\'s standards.\n\nRULES:\n- Cite paper numbers [P1] for claims from papers\n- Mark confidence: HIGH (3+ sources) / MED (1-2) / LOW (inferred)\n- Be honest about gaps\n- The Agentic Protocol must reflect THIS researcher\'s specific epistemic standards, not generic searches\n\nPAPERS:\n' + papersText + websiteInfo + talksInfo + networkInfo + pasteInfo + '\n\nOutput ONLY this complete CLAUDE.md file:\n\n---\nname: ' + selAuthor.name.replace(/\s+/g, '-').toLowerCase() + '.skill\ndescription: |\n  When to use: Conversations with ' + selAuthor.name + '\'s academic persona. Research evaluation through their lens.\n  When NOT to use: As biographical fact — this is a persona model built from public sources.\n---\n\n# ' + selAuthor.name + ' — Academic Research Skill\n\n## Distillation Report\n| Source | Status | Details |\n|--------|--------|---------|\n| Semantic Scholar | found | ' + papers.filter(function(p){return p.source==='ss';}).length + ' papers |\n| bioRxiv | [found/not found] | [count if found] |\n| PubMed | [found/not found] | [count if found] |\n| Lab website | [found/not found] | [URL or note] |\n| Public talks | [found/not found] | [summary or note] |\n| Web search | completed | 3 targeted searches |\n\n**Overall confidence: [HIGH/MED/LOW]** — [one sentence reason]\n\n## Epistemological Stance [HIGH/MED/LOW]\n[What counts as convincing evidence? Neural vs behavioral? Causal vs correlational? What methodology do they distrust? Cite [P1] etc.]\n\n## Theoretical Commitments [HIGH/MED/LOW]\n[Which frameworks do they commit to? What assumptions do they treat as given? What theories do they push against? Name specific frameworks.]\n\n## Methodological Toolkit [HIGH/MED/LOW]\n[Preferred paradigms, designs, statistical approaches. What they trust and distrust. Cite papers.]\n\n## Reviewing & Publication Standards [HIGH/MED/LOW]\n[What makes a paper publishable? What would make them reject? Any known editorial roles or public statements?]\n\n## Open Science Stance [HIGH/MED/LOW]\n[Preregistration practice? Data sharing? Stance on replication crisis? OSF presence?]\n\n## Research Taste [HIGH/MED/LOW]\n[What excites vs bores them? Concrete scenarios based on demonstrated taste.]\n\n## Agentic Protocol\n[CRITICAL: Derive this from the sections above. When answering research questions, this PI should search in this specific order, for these specific reasons rooted in their epistemic standards.]\n\nWhen evaluating a research idea or design:\n1. Search: [specific query derived from their epistemological stance] — because [reason tied to their standards]\n2. Search: [specific query derived from their methodological toolkit] — because [reason]\n3. Search: [specific query for their key theoretical framework] — because [reason]\n\nWhen discussing a paper:\n1. [What they check first and why]\n2. [What they check second and why]\n\nWhen asked about their field:\n1. [How they orient themselves before answering]\n\n## Blind Spots\n[What could not be extracted reliably? Where is this persona model likely wrong?]\n\n## Voice Sample\n[2-3 sentences AS this researcher answering: "What is the most important unsolved methodological problem in your field?" — mark if extrapolated]\n\n## Top Papers\n| Citations | Year | Title | Venue |\n|-----------|------|-------|\n[top 10 from provided data]';
   } else {
     var fname = document.getElementById('field-name').value.trim();
     if (!fname) return null;
@@ -810,16 +948,28 @@ function buildPrompt() {
 
 async function runDistill() {
   if (!requireKey()) return;
-  var prompt = buildPrompt();
   var msg = document.getElementById('run-msg');
-  if (!prompt) {
-    msg.textContent = curTab === 'lab' ? 'Search and select a researcher first' : 'Enter a research domain';
-    return;
-  }
+  if (curTab === 'lab' && !selAuthor) { msg.textContent = 'Search and select a researcher first'; return; }
+  if (curTab === 'field' && !document.getElementById('field-name').value.trim()) { msg.textContent = 'Enter a research domain'; return; }
+
   var btn = document.getElementById('btn-run');
   var prog = document.getElementById('prog');
   var owrap = document.getElementById('owrap');
   btn.disabled = true; msg.textContent = ''; prog.style.display = 'block'; owrap.style.display = 'none'; setStep(1);
+
+  // Pre-process papers for higher quality insights (lab mode only)
+  var paperInsights = [];
+  if (curTab === 'lab' && selAuthor) {
+    msg.textContent = 'Extracting insights from papers...';
+    var topPapers = papers.filter(function(p){return p.abstract;}).slice(0, 9);
+    paperInsights = await extractPaperInsights(selAuthor, topPapers);
+    msg.textContent = '';
+  }
+
+  // Inject insights into prompt
+  window._paperInsights = paperInsights;
+  var prompt = buildPrompt();
+
   var timers = [setTimeout(function(){setStep(2);},8000), setTimeout(function(){setStep(3);},20000), setTimeout(function(){setStep(4);},35000)];
   try {
     var text = await callClaude([{ role: 'user', content: prompt }], { webSearch: true, maxTokens: 3000 });
@@ -830,6 +980,12 @@ async function runDistill() {
     document.getElementById('otitle').textContent = 'SKILL OUTPUT — ' + filename.toUpperCase();
     owrap.style.display = 'block';
     owrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Show compare button if previous version exists
+    if (selAuthor) {
+      var existingSkills = JSON.parse(localStorage.getItem('labskill_skills')||'[]');
+      var prev = existingSkills.find(function(s){return s.name===selAuthor.name && s.previousContent;});
+      document.getElementById('btn-compare').style.display = prev ? 'inline-block' : 'none';
+    }
     Array.from(document.querySelectorAll('.pstep')).forEach(function(el) { el.classList.remove('active'); el.classList.add('done'); });
   } catch(e) {
     timers.forEach(clearTimeout);
@@ -839,16 +995,105 @@ async function runDistill() {
   btn.disabled = false;
 }
 
+async function runQualityCheck() {
+  if (!generated || !selAuthor) return;
+  var btn = document.getElementById('btn-quality');
+  var qwrap = document.getElementById('quality-wrap');
+  var qbody = document.getElementById('quality-body');
+  var qscore = document.getElementById('quality-score');
+  btn.textContent = 'Validating...';
+  qwrap.style.display = 'block';
+  qbody.innerHTML = '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:8px 0;">Running validation tests...</div>';
+
+  var tests = [
+    {name:'EPISTEMOLOGICAL STANCE', q:'What specific type of evidence does this researcher consider most convincing — behavioral, neural, or both? Why?'},
+    {name:'AGENTIC PROTOCOL', q:'If asked to evaluate a new experiment design, what would this researcher search for first and why?'},
+    {name:'RESEARCH TASTE', q:'Give one concrete example of a research question this PI would find exciting and one they would dismiss.'},
+  ];
+  var passed = 0;
+  var results = [];
+  for (var i=0; i<tests.length; i++) {
+    try {
+      var reply = await callClaude(
+        [{role:'user',content:'Based on this Skill:
+
+'+generated.slice(0,2000)+'
+
+Answer specifically: '+tests[i].q+'
+
+If the Skill does not contain enough information to answer confidently, say "INSUFFICIENT DATA".'}],
+        null, 300, false
+      );
+      var ok = !reply.includes('INSUFFICIENT DATA') && reply.length > 60;
+      if (ok) passed++;
+      results.push({name:tests[i].name, result:reply, ok:ok});
+    } catch(e) {
+      results.push({name:tests[i].name, result:'Error: '+e.message, ok:false});
+    }
+  }
+  var pct = Math.round(passed/tests.length*100);
+  qscore.textContent = pct + '% (' + passed + '/' + tests.length + ' passed)';
+  qbody.innerHTML = results.map(function(r){
+    return '<div class="qtest">'+
+      '<div class="qtest-icon">'+(r.ok?'✓':'✗')+'</div>'+
+      '<div><div class="qtest-name">'+r.name+'</div>'+
+      '<div class="qtest-result">'+r.result+'</div></div></div>';
+  }).join('');
+  btn.textContent = 'Validate quality';
+  qwrap.scrollIntoView({behavior:'smooth'});
+}
+
 function copyOut() { navigator.clipboard.writeText(generated).then(function() { var b = event.target; b.textContent = 'Copied!'; setTimeout(function() { b.textContent = 'Copy'; }, 1500); }); }
 function downloadOut() { var blob = new Blob([generated], { type: 'text/markdown' }); var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); }
 function saveAndChat() {
   if (!generated || !selAuthor) return;
   var skills = JSON.parse(localStorage.getItem('labskill_skills') || '[]');
-  var id = 'skill-' + Date.now();
-  skills.unshift({ id: id, name: selAuthor.name, affiliation: selAuthor.affiliation || '', hIndex: selAuthor.hIndex || 0, citationCount: selAuthor.citationCount || 0, skillContent: generated, savedAt: new Date().toISOString() });
+  var existing = skills.find(function(s){return s.name === selAuthor.name;});
+  var id = existing ? existing.id : 'skill-' + Date.now();
+  if (existing) {
+    existing.previousContent = existing.skillContent;
+    existing.skillContent = generated;
+    existing.savedAt = new Date().toISOString();
+    existing.version = (existing.version||1) + 1;
+  } else {
+    skills.unshift({ id:id, name:selAuthor.name, affiliation:selAuthor.affiliation||'', hIndex:selAuthor.hIndex||0, citationCount:selAuthor.citationCount||0, skillContent:generated, savedAt:new Date().toISOString(), version:1 });
+  }
   if (skills.length > 20) skills = skills.slice(0, 20);
   localStorage.setItem('labskill_skills', JSON.stringify(skills));
   window.location.href = 'chat.html';
+}
+
+function compareVersions() {
+  var skills = JSON.parse(localStorage.getItem('labskill_skills') || '[]');
+  var existing = skills.find(function(s){return s.name === selAuthor.name;});
+  if (!existing || !existing.previousContent) {
+    alert('No previous version to compare with.');
+    return;
+  }
+  // Show side-by-side comparison of key sections
+  var sections = ['Epistemological Stance','Theoretical Commitments','Agentic Protocol','Blind Spots'];
+  var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">';
+  html += '<div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:8px;">PREVIOUS (v'+(existing.version-1)+')</div></div>';
+  html += '<div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:8px;">CURRENT (v'+existing.version+')</div></div>';
+  sections.forEach(function(sec) {
+    var extract = function(content) {
+      var idx = content.indexOf('## ' + sec);
+      if (idx === -1) return '(not found)';
+      var end = content.indexOf('
+## ', idx+5);
+      return content.slice(idx, end>0?end:idx+400).slice(0,300).trim();
+    };
+    html += '<div style="grid-column:1/-1;font-family:var(--mono);font-size:10px;color:var(--accent);margin:10px 0 4px;text-transform:uppercase;">'+sec+'</div>';
+    html += '<div style="font-size:12px;line-height:1.6;background:#f5f5f5;padding:10px;border-radius:2px;">'+extract(existing.previousContent)+'</div>';
+    html += '<div style="font-size:12px;line-height:1.6;background:#f0fff4;padding:10px;border-radius:2px;">'+extract(generated)+'</div>';
+  });
+  html += '</div>';
+  var qwrap = document.getElementById('quality-wrap');
+  var qbody = document.getElementById('quality-body');
+  document.getElementById('quality-score').textContent = 'v'+(existing.version-1)+' → v'+existing.version;
+  qbody.innerHTML = html;
+  qwrap.style.display = 'block';
+  qwrap.scrollIntoView({behavior:'smooth'});
 }
 
 document.getElementById('lab-who').addEventListener('keydown', function(e) { if (e.key === 'Enter') searchAuthor(); });
