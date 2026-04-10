@@ -495,14 +495,16 @@ function requireKey() {
   openModal(); return false;
 }
 
+function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+
 async function callClaude(messages, opts) {
   opts = opts || {};
   var body = { max_tokens: opts.maxTokens || 2000, messages: messages };
   if (opts.webSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
-  // Always route through Cloudflare Worker to handle CORS
   var headers = { 'Content-Type': 'application/json' };
   if (apiKey) headers['X-User-Key'] = apiKey;
   else { incFree(); if (freeLeft() === 0) { usingFree = false; updateBtn(); } }
+  if (opts.distill) headers['X-Distill'] = '1';
   var res = await fetch(PROXY_URL, { method: 'POST', headers: headers, body: JSON.stringify(body) });
   if (!res.ok) {
     var e = await res.json().catch(function() { return {}; });
@@ -536,10 +538,10 @@ async function discoverLabs() {
   var results = document.getElementById('lab-results');
   btn.disabled = true;
   status.textContent = 'Searching...';
-  results.innerHTML = '<div class="sk-grid">' + Array(6).fill('<div class="sk-card"><div class="sk-line w35"></div><div class="sk-line w70" style="height:16px;margin-bottom:5px"></div><div class="sk-line w50"></div></div>').join('') + '</div>';
+  results.innerHTML = '<div class="sk-grid">' + Array(4).fill('<div class="sk-card"><div class="sk-line w35"></div><div class="sk-line w70" style="height:16px;margin-bottom:5px"></div><div class="sk-line w50"></div></div>').join('') + '</div>';
   try {
-    var prompt = 'Find the top 12 most influential researchers in: "' + field + '". Use web search. IMPORTANT: Your entire response must be ONLY a JSON array starting with [ and ending with ]. No text before or after. No markdown. No explanation. Format:\n[{"name":"Full Name","institution":"University","country":"Country","hIndex":45,"citations":12000,"tags":["tag1","tag2","tag3"]}]\nReturn exactly 12 researchers sorted by impact.';
-    var text = await callClaude([{ role: 'user', content: prompt }], { webSearch: true, maxTokens: 1500 });
+    var prompt = 'List 8 top researchers in "' + field + '". Use web search. Return ONLY a JSON array, no other text:\n[{"name":"Full Name","institution":"University","hIndex":40,"tags":["tag1","tag2"]}]';
+    var text = await callClaude([{ role: 'user', content: prompt }], { webSearch: true, maxTokens: 800 });
     var clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
     var s = clean.indexOf('['); var e2 = clean.lastIndexOf(']');
     if (s === -1 || e2 === -1) {
@@ -714,9 +716,11 @@ async function selectAuthor(author) {
       } else { showSrcRow('web', '', 'skip', 'not found'); }
     } catch(e) { showSrcRow('web', '', 'skip', 'not found'); }
 
+    await sleep(2000); // wait 2s between web search calls to avoid rate limit
+
     try {
-      var talksPrompt = 'Search for public talks, interviews, or podcasts by academic researcher "' + author.name + '". Find any lecture videos, conference talks, or media interviews. Return a brief summary (100 words) of key things they said about their research, methodology, or scientific beliefs. If nothing found, say "not found".';
-      var talksResult = await callClaude([{ role: 'user', content: talksPrompt }], { webSearch: true, maxTokens: 400 });
+      var talksPrompt = 'Search for public talks, interviews, or podcasts by academic researcher "' + author.name + '". Return a brief summary (80 words max) of key things they said about their research. If nothing found, say "not found".';
+      var talksResult = await callClaude([{ role: 'user', content: talksPrompt }], { webSearch: true, maxTokens: 300 });
       if (talksResult && !talksResult.toLowerCase().includes('not found')) {
         publicSources.talks = talksResult;
         showSrcRow('talks', '', 'ok', 'found public statements');
@@ -822,7 +826,8 @@ async function runDistill() {
   btn.disabled = true; msg.textContent = ''; prog.style.display = 'block'; owrap.style.display = 'none'; setStep(1);
   var timers = [setTimeout(function(){setStep(2);},8000), setTimeout(function(){setStep(3);},20000), setTimeout(function(){setStep(4);},35000)];
   try {
-    var text = await callClaude([{ role: 'user', content: prompt }], { webSearch: true, maxTokens: 3000 });
+    await sleep(2000); // brief pause before main distillation
+    var text = await callClaude([{ role: 'user', content: prompt }], { webSearch: true, maxTokens: 3000, distill: true });
     timers.forEach(clearTimeout); setStep(5);
     if (!text) throw new Error('No output from model');
     generated = text;
