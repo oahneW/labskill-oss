@@ -211,6 +211,54 @@ var rtHistory = [];
 var discussMode = 'academic';
 var SUMMARY_EVERY = 10;
 
+function rtStorageKey() {
+  return 'labskill_rt:' + rtSelected.map(function(s){return s.id;}).sort().join(',');
+}
+function saveRtHistory() {
+  if (rtSelected.length >= 2) {
+    localStorage.setItem(rtStorageKey(), JSON.stringify({
+      history: rtHistory.slice(-80),
+      mode: discussMode,
+      savedAt: new Date().toISOString()
+    }));
+  }
+}
+function loadRtHistory() {
+  if (rtSelected.length < 2) return;
+  try {
+    var d = JSON.parse(localStorage.getItem(rtStorageKey()) || 'null');
+    if (d && d.history && d.history.length) {
+      rtHistory = d.history;
+      if (d.mode) {
+        discussMode = d.mode;
+        setDiscussMode(d.mode);
+      }
+      renderRtHistory();
+    }
+  } catch(e) {}
+}
+function renderRtHistory() {
+  var msgEl = document.getElementById('rt-messages');
+  var empty = msgEl.querySelector('.chat-empty');
+  if (empty) empty.remove();
+  var qNum = 0;
+  rtHistory.forEach(function(h) {
+    if (h.role === 'user') {
+      qNum++;
+      var qDiv = document.createElement('div');
+      qDiv.style.cssText = 'font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px 0 14px;border-bottom:1px solid var(--border);margin-bottom:14px;';
+      qDiv.innerHTML = '<span style="color:var(--accent);font-weight:600;margin-right:8px;">Q' + qNum + '</span>' + escHtml(h.content);
+      msgEl.appendChild(qDiv);
+    } else {
+      var div = document.createElement('div');
+      div.className = 'rt-msg';
+      div.innerHTML = '<div class="rt-speaker">' + escHtml(h.role.toUpperCase()) + '</div><div class="rt-body">' + marked.parse(h.content) + '</div>';
+      msgEl.appendChild(div);
+    }
+  });
+  msgEl.scrollTop = msgEl.scrollHeight;
+}
+
 // ── KEY MANAGEMENT ────────────────────────────────────────
 function updateKeyBtn() {
   var el = document.getElementById('kbtn');
@@ -254,11 +302,12 @@ function requireKey() {
 }
 
 // ── CLAUDE API ────────────────────────────────────────────
+
+// Non-streaming: returns full text (used for search queries, summaries, starters)
 async function callClaude(messages, system, maxTokens, useWebSearch) {
   var body = { max_tokens: maxTokens || 800, messages: messages };
   if (system) body.system = system;
   if (useWebSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
-  // Always route through Cloudflare Worker (CORS)
   var headers = { 'Content-Type': 'application/json' };
   if (apiKey) headers['X-User-Key'] = apiKey;
   var res = await fetch(PROXY_URL, { method: 'POST', headers: headers, body: JSON.stringify(body) });
@@ -269,6 +318,50 @@ async function callClaude(messages, system, maxTokens, useWebSearch) {
   var d = await res.json();
   if (!apiKey) incChatUsed();
   return (d.content || []).filter(function(b) { return b.type === 'text'; }).map(function(b) { return b.text; }).join('\n').trim();
+}
+
+// Streaming: tokens appear in real time inside targetEl, returns full text
+async function callClaudeStream(messages, system, maxTokens, targetEl) {
+  var body = { max_tokens: maxTokens || 1000, messages: messages };
+  if (system) body.system = system;
+  var headers = { 'Content-Type': 'application/json', 'X-Stream': '1' };
+  if (apiKey) headers['X-User-Key'] = apiKey;
+  var res = await fetch(PROXY_URL, { method: 'POST', headers: headers, body: JSON.stringify(body) });
+  if (!res.ok) {
+    var e = await res.json().catch(function() { return {}; });
+    throw new Error((e.error && e.error.message) || 'API error ' + res.status);
+  }
+  var reader = res.body.getReader();
+  var decoder = new TextDecoder();
+  var fullText = '';
+  var buf = '';
+  while (true) {
+    var chunk = await reader.read();
+    if (chunk.done) break;
+    buf += decoder.decode(chunk.value, { stream: true });
+    var lines = buf.split('\n');
+    buf = lines.pop();
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line.startsWith('data:')) continue;
+      var raw = line.slice(5).trim();
+      if (raw === '[DONE]') continue;
+      try {
+        var evt = JSON.parse(raw);
+        if (evt.type === 'content_block_delta' && evt.delta && evt.delta.type === 'text_delta') {
+          fullText += evt.delta.text;
+          if (targetEl) {
+            targetEl.innerHTML = marked.parse(fullText + ' ▍');
+            var msgEl = document.getElementById('chat-messages');
+            if (msgEl) msgEl.scrollTop = msgEl.scrollHeight;
+          }
+        }
+      } catch(pe) {}
+    }
+  }
+  if (targetEl) targetEl.innerHTML = marked.parse(fullText);
+  if (!apiKey) incChatUsed();
+  return fullText.trim();
 }
 
 // ── SKILLS STORAGE ────────────────────────────────────────
@@ -306,6 +399,7 @@ function selectSkill(id) {
   if (!skill) return;
   if (mode === 'chat') {
     selectedSkill = skill;
+    localStorage.setItem('labskill_last_skill', id);
     chatHistory = loadChatHistory(id);
     summaries = loadSummaries(id);
     document.getElementById('btn-send').disabled = false;
@@ -386,53 +480,100 @@ async function sendChat() {
   document.getElementById('starter-wrap').style.display = 'none';
   appendMsg('user', msg);
   document.getElementById('btn-send').disabled = true;
-
   chatHistory.push({ role: 'user', content: msg });
 
-  try {
-    // STEP 1: Determine what to search based on this PI's Agentic Protocol
-    var agenticSection = extractAgenticProtocol(selectedSkill.skillContent || '');
-    var step1System = 'You are ' + selectedSkill.name + '. Based on your research persona and Agentic Protocol, decide what to search before answering this question.\n\nYour persona:\n' + (selectedSkill.skillContent || '').slice(0, 800) + '\n\nReturn ONLY a JSON array of 2-3 search queries (strings), nothing else. Make them specific to your epistemological standards.\nExample: ["moral decision-making ultimatum game 2024 meta-analysis", "fMRI behavioral convergence social preferences"]';
-    var step1Reply = await callClaude([{ role: 'user', content: 'Question: ' + msg + '\n\nWhat should I search to answer this well, given my research standards?' }], step1System, 300, false);
+  // Create the PI response div with empty body (streaming will fill it)
+  var el = document.getElementById('chat-messages');
+  var piDiv = document.createElement('div');
+  piDiv.className = 'msg';
+  piDiv.innerHTML = '<div class="msg-label">' + selectedSkill.name.toUpperCase() + '</div><div class="msg-body pi" id="stream-target"></div>';
+  el.appendChild(piDiv);
+  el.scrollTop = el.scrollHeight;
+  var streamTarget = document.getElementById('stream-target');
 
+  try {
+    var memContext = summaries.length ? 'Earlier conversation:\n' + summaries.map(function(s) { return '- ' + s.summary; }).join('\n') + '\n\n' : '';
+    var personaContext = (selectedSkill.skillContent || '').slice(0, 1200);
+    var agenticProtocol = extractAgenticProtocol(selectedSkill.skillContent || '');
+
+    // ── STEP 1: Decide what to search (non-streaming, fast) ──
+    streamTarget.innerHTML = '<span style="font-family:var(--mono);font-size:11px;color:var(--muted);">Deciding what to search...</span>';
+    var step1System = 'You are ' + selectedSkill.name + '. Given your research persona, decide 2-3 specific search queries needed to answer this question well.\n\n' + (agenticProtocol || personaContext.slice(0, 600)) + '\n\nReturn ONLY a JSON array of query strings. No markdown, no explanation.';
+    var step1Reply = await callClaude(
+      [{ role: 'user', content: 'Question: ' + msg }],
+      step1System, 300, false
+    );
     var queries = [];
     try {
-      var clean = step1Reply.replace(/```json/g, '').replace(/```/g, '').trim();
-      var s = clean.indexOf('['); var e2 = clean.lastIndexOf(']');
-      if (s >= 0 && e2 > s) queries = JSON.parse(clean.slice(s, e2 + 1));
-    } catch(pe) { queries = [msg]; }
+      var c1 = step1Reply.replace(/```json/g,'').replace(/```/g,'').trim();
+      var s1 = c1.indexOf('['), e1 = c1.lastIndexOf(']');
+      if (s1 >= 0 && e1 > s1) queries = JSON.parse(c1.slice(s1, e1+1));
+    } catch(pe) {}
     if (!queries.length) queries = [msg];
 
-    // Show what we're searching
-    showSearchIndicator(queries);
+    // ── REACT LOOP: search → evaluate → maybe search more ──
+    var searchResults = [];
+    var maxRounds = 3;
+    for (var round = 0; round < maxRounds; round++) {
+      var roundQueries = round === 0 ? queries : [];
 
-    // STEP 2: Search and answer
-    var memContext = summaries.length ? 'Earlier conversation summary:\n' + summaries.map(function(s) { return '- ' + s.summary; }).join('\n') + '\n\n' : '';
-    var recentHistory = chatHistory.slice(-8);
+      if (round > 0) {
+        // Ask if more search needed
+        streamTarget.innerHTML = '<span style="font-family:var(--mono);font-size:11px;color:var(--muted);">Evaluating search results...</span>';
+        var evalSystem = 'You are ' + selectedSkill.name + '. You have searched and found some results. Do you need to search more to answer the question well?\n\nIf yes, return JSON: {"continue": true, "queries": ["query1", "query2"]}\nIf no, return JSON: {"continue": false}\n\nOnly return JSON, nothing else.';
+        var evalMsg = 'Original question: ' + msg + '\n\nSearch results so far:\n' + searchResults.map(function(r,i){return 'Round '+(i+1)+': '+r;}).join('\n\n');
+        var evalReply = await callClaude([{role:'user',content:evalMsg}], evalSystem, 200, false);
+        try {
+          var c2 = evalReply.replace(/```json/g,'').replace(/```/g,'').trim();
+          var s2 = c2.indexOf('{'), e2 = c2.lastIndexOf('}');
+          var evalObj = JSON.parse(c2.slice(s2, e2+1));
+          if (!evalObj.continue) break;
+          roundQueries = evalObj.queries || [];
+        } catch(pe) { break; }
+        if (!roundQueries.length) break;
+      }
 
-    var step2System = 'You are ' + selectedSkill.name + '. Use your web search tool to search for: ' + queries.join('; ') + '\n\nThen answer the user\'s question using what you find, analyzed through your research framework.\n\nYour persona:\n' + (selectedSkill.skillContent || '').slice(0, 1200) + '\n\n' + memContext +
-      'STYLE:\n- Speak as this researcher, use first person\n- Ground your answer in what you actually searched and found\n- Be specific and honest — if search results are thin, say so\n- This is a real conversation, not a lecture. Keep it focused.\n- 150-350 words unless the question requires more';
+      // Show search indicator
+      var roundLabel = round === 0 ? 'Searching' : 'Searching more';
+      streamTarget.innerHTML =
+        '<div class="search-indicator"><div class="search-dot"></div>' + roundLabel + ' (round ' + (round+1) + '/' + maxRounds + ')...</div>' +
+        '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:4px 0;">' +
+        roundQueries.map(function(q){ return '<div>→ ' + escHtml(q) + '</div>'; }).join('') + '</div>';
+      el.scrollTop = el.scrollHeight;
 
-    var messages = recentHistory.slice(0, -1).map(function(h) { return { role: h.role, content: h.content }; });
-    messages.push({ role: 'user', content: msg + '\n\n[Search for: ' + queries.join(', ') + ']' });
+      // Execute web search via non-streaming call
+      var searchSystem = 'Search for the following and return a concise summary of findings (200 words max): ' + roundQueries.join('; ');
+      var searchReply = await callClaude(
+        [{role:'user', content:'Search for: ' + roundQueries.join(', ')}],
+        searchSystem, 600, true
+      );
+      searchResults.push(searchReply);
+    }
 
-    var reply = await callClaude(messages, step2System, 1000, true);
+    // ── STEP 3: Stream the final answer ──
+    streamTarget.innerHTML = '<span class="typing-dot"></span> <span class="typing-dot"></span> <span class="typing-dot"></span>';
 
-    removeSearchIndicator();
-    appendMsg('pi', reply);
+    var recentHistory = chatHistory.slice(-8, -1).map(function(h) { return { role: h.role, content: h.content }; });
+    var finalSystem = 'You are ' + selectedSkill.name + '.\n\nYour research persona:\n' + personaContext + '\n\n' + memContext +
+      'You have searched and found:\n' + searchResults.join('\n\n---\n\n') +
+      '\n\nNow answer the user\'s question using these findings, analyzed through your research framework.' +
+      '\n- Speak as this researcher in first person' +
+      '\n- Reference what you found specifically' +
+      '\n- Be direct and honest — if findings are thin, say so' +
+      '\n- 150-400 words';
+
+    recentHistory.push({ role: 'user', content: msg });
+    var reply = await callClaudeStream(recentHistory, finalSystem, 1000, streamTarget);
+
     chatHistory.push({ role: 'assistant', content: reply });
     saveChatHistory(selectedSkill.id, chatHistory);
+    if (chatHistory.length % SUMMARY_EVERY === 0) summarizeHistory();
 
-    // Summarize if long
-    if (chatHistory.length % SUMMARY_EVERY === 0) {
-      summarizeHistory();
-    }
   } catch(e) {
-    removeSearchIndicator();
-    var t = document.getElementById('typing-msg');
-    if (t) t.remove();
-    appendMsg('pi', 'Error: ' + e.message);
+    if (streamTarget) streamTarget.innerHTML = '<span style="color:var(--accent);">Error: ' + escHtml(e.message) + '</span>';
   }
+  document.getElementById('btn-send').disabled = false;
+}
   document.getElementById('btn-send').disabled = false;
 }
 
@@ -573,6 +714,7 @@ async function sendRoundtable() {
       var reply = await callClaude([{ role: 'user', content: userMsg }], sysPrompt, 400, false);
       loadDiv.querySelector('.rt-body').innerHTML = marked.parse(reply);
       rtHistory.push({ role: skill.name, content: reply });
+      saveRtHistory();
     } catch(e) {
       loadDiv.querySelector('.rt-body').textContent = 'Error: ' + e.message;
     }
@@ -622,6 +764,20 @@ function updateChatQuotaLabel() {
 }
 loadSkills();
 updateChatQuotaLabel();
+
+// Auto-restore last selected skill
+var lastSkillId = localStorage.getItem('labskill_last_skill');
+if (lastSkillId) {
+  var lastSkill = skills.find(function(s){ return s.id === lastSkillId; });
+  if (lastSkill) {
+    selectedSkill = lastSkill;
+    chatHistory = loadChatHistory(lastSkillId);
+    summaries = loadSummaries(lastSkillId);
+    document.getElementById('btn-send').disabled = false;
+    renderChatHistory();
+    renderSidebar();
+  }
+}
 </script>
 </body>
 </html>
