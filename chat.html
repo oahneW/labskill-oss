@@ -254,17 +254,30 @@ function requireKey() {
 }
 
 // ── CLAUDE API ────────────────────────────────────────────
-async function callClaude(messages, system, maxTokens, useWebSearch) {
+async function callClaude(messages, system, maxTokens, useWebSearch, _retry) {
   var body = { max_tokens: maxTokens || 800, messages: messages };
   if (system) body.system = system;
   if (useWebSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
-  // Always route through Cloudflare Worker (CORS)
   var headers = { 'Content-Type': 'application/json' };
   if (apiKey) headers['X-User-Key'] = apiKey;
   var res = await fetch(PROXY_URL, { method: 'POST', headers: headers, body: JSON.stringify(body) });
   if (!res.ok) {
     var e = await res.json().catch(function() { return {}; });
-    throw new Error((e.error && e.error.message) || 'API error ' + res.status);
+    var msg = (e.error && e.error.message) || 'API error ' + res.status;
+    if (res.status === 429 && !_retry) {
+      // Show retry indicator in chat
+      var el = document.getElementById('chat-messages');
+      var note = document.createElement('div');
+      note.id = 'retry-note';
+      note.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--accent);padding:8px 32px;';
+      note.textContent = 'Rate limited — retrying in 15 seconds...';
+      if (el) el.appendChild(note);
+      await new Promise(function(r){ setTimeout(r, 15000); });
+      var n2 = document.getElementById('retry-note');
+      if (n2) n2.remove();
+      return callClaude(messages, system, maxTokens, useWebSearch, true);
+    }
+    throw new Error(msg);
   }
   var d = await res.json();
   if (!apiKey) incChatUsed();

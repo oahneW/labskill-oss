@@ -495,18 +495,28 @@ function requireKey() {
   openModal(); return false;
 }
 
-async function callClaude(messages, opts) {
+function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+
+async function callClaude(messages, opts, _retry) {
   opts = opts || {};
   var body = { max_tokens: opts.maxTokens || 2000, messages: messages };
   if (opts.webSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
-  // Always route through Cloudflare Worker to handle CORS
   var headers = { 'Content-Type': 'application/json' };
   if (apiKey) headers['X-User-Key'] = apiKey;
   else { incFree(); if (freeLeft() === 0) { usingFree = false; updateBtn(); } }
   var res = await fetch(PROXY_URL, { method: 'POST', headers: headers, body: JSON.stringify(body) });
   if (!res.ok) {
     var e = await res.json().catch(function() { return {}; });
-    throw new Error((e.error && e.error.message) || 'API error ' + res.status);
+    var msg = (e.error && e.error.message) || 'API error ' + res.status;
+    if (res.status === 429 && !_retry) {
+      // Rate limited - show message and retry once after 15s
+      var rmsg = document.getElementById('run-msg');
+      if (rmsg) rmsg.textContent = 'Rate limited — retrying in 15 seconds...';
+      await sleep(15000);
+      if (rmsg) rmsg.textContent = 'Retrying...';
+      return callClaude(messages, opts, true);
+    }
+    throw new Error(msg);
   }
   var d = await res.json();
   return (d.content || []).filter(function(b) { return b.type === 'text'; }).map(function(b) { return b.text; }).join('\n').trim();
