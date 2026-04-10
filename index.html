@@ -519,6 +519,18 @@ async function callClaude(messages, opts, _retry) {
     throw new Error(msg);
   }
   var d = await res.json();
+  if (d.error) {
+    var emsg = (d.error && d.error.message) || 'API error';
+    var isRL = emsg.toLowerCase().includes('rate limit') || (d.error.type === 'rate_limit_error');
+    if (isRL && !_retry) {
+      var rmsg = document.getElementById('run-msg');
+      if (rmsg) rmsg.textContent = 'Rate limited — retrying in 15 seconds...';
+      await sleep(15000);
+      if (rmsg) rmsg.textContent = 'Retrying...';
+      return callClaude(messages, opts, true);
+    }
+    throw new Error(emsg);
+  }
   return (d.content || []).filter(function(b) { return b.type === 'text'; }).map(function(b) { return b.text; }).join('\n').trim();
 }
 
