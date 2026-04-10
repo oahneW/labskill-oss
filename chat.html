@@ -110,11 +110,6 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 .bp{background:var(--ink);color:var(--cream);font-family:var(--sans);font-size:14px;font-weight:500;padding:10px 22px;border:none;cursor:pointer;flex:1;}.bp:hover{opacity:.8;}
 .bs{background:transparent;color:var(--muted);font-family:var(--sans);font-size:14px;padding:10px 22px;border:1px solid var(--border);cursor:pointer;}.bs:hover{color:var(--ink);}
 .mnote{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:10px;line-height:1.6;}
-.feedback-bar{padding:8px 32px;background:#fafaf8;border-top:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.fb-btn{padding:3px 10px;border:1px solid var(--border);background:white;cursor:pointer;font-family:var(--mono);font-size:10px;color:var(--muted);transition:all .15s;}
-.fb-btn:hover{border-color:var(--ink);color:var(--ink);}
-.fb-btn.yes{border-color:#2e7d32;color:#2e7d32;}
-.fb-btn.no{border-color:var(--accent);color:var(--accent);}
 </style>
 </head>
 <body>
@@ -164,11 +159,6 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
     <div class="starter-wrap" id="starter-wrap" style="display:none;">
       <div class="starter-label">Suggested questions</div>
       <div class="starter-btns" id="starter-btns"></div>
-    </div>
-    <div class="feedback-bar" id="feedback-bar" style="display:none;">
-      Were the search results useful?
-      <button class="fb-btn yes" onclick="submitFeedback(true)">Yes, helpful</button>
-      <button class="fb-btn no" onclick="submitFeedback(false)">Not really</button>
     </div>
     <div class="chat-input-wrap">
       <div class="chat-input-row">
@@ -220,8 +210,6 @@ var rtSelected = [];
 var rtHistory = [];
 var discussMode = 'academic';
 var SUMMARY_EVERY = 10;
-var lastSearchQueries = [];
-var feedbackTimer = null;
 
 function rtStorageKey() {
   return 'labskill_rt:' + rtSelected.map(function(s){return s.id;}).sort().join(',');
@@ -490,8 +478,6 @@ async function sendChat() {
   if (!msg || !selectedSkill) return;
   input.value = ''; autoResize(input);
   document.getElementById('starter-wrap').style.display = 'none';
-  document.getElementById('feedback-bar').style.display = 'none';
-  if (feedbackTimer) clearTimeout(feedbackTimer);
   appendMsg('user', msg);
   document.getElementById('btn-send').disabled = true;
   chatHistory.push({ role: 'user', content: msg });
@@ -512,11 +498,7 @@ async function sendChat() {
 
     // ── STEP 1: Decide what to search (non-streaming, fast) ──
     streamTarget.innerHTML = '<span style="font-family:var(--mono);font-size:11px;color:var(--muted);">Deciding what to search...</span>';
-    var feedback = getSearchFeedback(selectedSkill.id);
-    var feedbackHint = '';
-    if (feedback.helpful.length) feedbackHint += '\nPreviously helpful search terms: ' + feedback.helpful.slice(-5).join(', ');
-    if (feedback.unhelpful.length) feedbackHint += '\nAvoid these (previously unhelpful): ' + feedback.unhelpful.slice(-5).join(', ');
-    var step1System = 'You are ' + selectedSkill.name + '. Given your research persona, decide 2-3 specific search queries needed to answer this question well.\n\n' + (agenticProtocol || personaContext.slice(0, 600)) + feedbackHint + '\n\nReturn ONLY a JSON array of query strings. No markdown, no explanation.';
+    var step1System = 'You are ' + selectedSkill.name + '. Given your research persona, decide 2-3 specific search queries needed to answer this question well.\n\n' + (agenticProtocol || personaContext.slice(0, 600)) + '\n\nReturn ONLY a JSON array of query strings. No markdown, no explanation.';
     var step1Reply = await callClaude(
       [{ role: 'user', content: 'Question: ' + msg }],
       step1System, 300, false
@@ -583,11 +565,9 @@ async function sendChat() {
     recentHistory.push({ role: 'user', content: msg });
     var reply = await callClaudeStream(recentHistory, finalSystem, 1000, streamTarget);
 
-    lastSearchQueries = queries || [];
     chatHistory.push({ role: 'assistant', content: reply });
     saveChatHistory(selectedSkill.id, chatHistory);
     if (chatHistory.length % SUMMARY_EVERY === 0) summarizeHistory();
-    showFeedbackBar();
 
   } catch(e) {
     if (streamTarget) streamTarget.innerHTML = '<span style="color:var(--accent);">Error: ' + escHtml(e.message) + '</span>';
@@ -769,39 +749,6 @@ document.getElementById('rt-input').addEventListener('input', function() { autoR
 document.getElementById('rt-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendRoundtable(); }
 });
-
-// ── SEARCH FEEDBACK ──────────────────────────────────────
-function submitFeedback(helpful) {
-  if (!selectedSkill || !lastSearchQueries.length) return;
-  var key = 'labskill_search_feedback:' + selectedSkill.id;
-  var stored = JSON.parse(localStorage.getItem(key) || '{"helpful":[],"unhelpful":[]}');
-  if (helpful) {
-    lastSearchQueries.forEach(function(q) {
-      if (!stored.helpful.includes(q)) stored.helpful.push(q);
-    });
-  } else {
-    lastSearchQueries.forEach(function(q) {
-      if (!stored.unhelpful.includes(q)) stored.unhelpful.push(q);
-    });
-  }
-  // Keep last 20 of each
-  stored.helpful = stored.helpful.slice(-20);
-  stored.unhelpful = stored.unhelpful.slice(-20);
-  localStorage.setItem(key, JSON.stringify(stored));
-  document.getElementById('feedback-bar').style.display = 'none';
-}
-
-function getSearchFeedback(skillId) {
-  var key = 'labskill_search_feedback:' + skillId;
-  return JSON.parse(localStorage.getItem(key) || '{"helpful":[],"unhelpful":[]}');
-}
-
-function showFeedbackBar() {
-  if (feedbackTimer) clearTimeout(feedbackTimer);
-  feedbackTimer = setTimeout(function() {
-    document.getElementById('feedback-bar').style.display = 'flex';
-  }, 2000); // show 2s after response
-}
 
 // ── INIT ──────────────────────────────────────────────────
 function updateChatQuotaLabel() {
