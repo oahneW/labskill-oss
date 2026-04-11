@@ -32,15 +32,16 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 .skill-item:hover{background:white;}
 .skill-item.selected{background:white;border-left:2px solid var(--accent);}
 .skill-item.rt-sel{background:#fff8f6;border-left:2px solid var(--accent);}
-.skill-actions{display:none;gap:2px;flex-shrink:0;}
+.skill-actions{display:none!important;gap:2px;flex-shrink:0;}
 .skill-actions span{font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;padding:4px 7px;transition:color .15s;}
 .skill-actions span:hover{color:var(--ink);}
-.skill-item:hover .skill-actions{display:flex;}
+.skill-item:hover .skill-actions{display:flex!important;}
 .skill-name{font-family:var(--serif);font-size:14px;margin-bottom:2px;}
 .skill-meta{font-family:var(--mono);font-size:9px;color:var(--muted);}
 .sidebar-empty{padding:20px 16px;font-size:12px;color:var(--muted);line-height:1.6;}
 .skill-tag{font-family:var(--mono);font-size:9px;background:#f0f0f0;color:var(--muted);padding:1px 6px;border-radius:2px;margin-top:3px;display:inline-block;}
-.sidebar-group{padding:8px 16px 4px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}
+.sidebar-group{padding:8px 16px 4px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);user-select:none;}
+.sidebar-group:hover{color:var(--ink);}
 
 /* MAIN AREAS */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
@@ -365,7 +366,12 @@ function renderSidebar() {
   var groupKeys = Object.keys(groups).sort(function(a,b){ return a === '' ? 1 : b === '' ? -1 : a.localeCompare(b); });
   var html = '';
   groupKeys.forEach(function(g) {
-    if (groupKeys.length > 1) html += '<div class="sidebar-group">' + (g || 'Untagged') + '</div>';
+    if (groupKeys.length > 1) {
+      var isCollapsed = (window._collapsedGroups || {})[g];
+      var arrow = isCollapsed ? '►' : '▼';
+      html += '<div class="sidebar-group" onclick="toggleGroup('' + escHtml(g) + '')" style="cursor:pointer;">' + arrow + ' ' + (g || 'Untagged') + '</div>';
+      if (isCollapsed) { html += ''; return; }
+    }
     html += groups[g].map(function(s) {
     var isChatSel = mode === 'chat' && selectedSkill && selectedSkill.id === s.id;
     var isRtSel = mode === 'roundtable' && rtSelected.find(function(r) { return r.id === s.id; });
@@ -384,13 +390,19 @@ function renderSidebar() {
   el.innerHTML = html;
 }
 
+function toggleGroup(g) {
+  window._collapsedGroups = window._collapsedGroups || {};
+  window._collapsedGroups[g] = !window._collapsedGroups[g];
+  renderSidebar();
+}
+
 function editTag(id) {
   var skill = skills.find(function(s){ return s.id === id; });
   if (!skill) return;
   var current = skill.tag || '';
-  var tag = prompt('Tag for "' + skill.name + '" (leave empty to remove):', current);
+  var tag = prompt('Group for "' + skill.name + '" (leave empty to remove):', current);
   if (tag === null) return; // cancelled
-  skill.tag = tag.trim();
+  skill.tag = tag.trim().toLowerCase();
   saveSkills();
   renderSidebar();
 }
@@ -426,11 +438,16 @@ function selectSkill(id) {
     if (!chatHistory.length) generateStarters(skill);
   } else {
     var idx = rtSelected.findIndex(function(r) { return r.id === id; });
+    // Save existing roles before any changes
+    var savedRoles = {};
+    rtSelected.forEach(function(r){ if (r._role) savedRoles[r.id] = r._role; });
     if (idx > -1) { rtSelected.splice(idx, 1); currentRtKey = ''; }
     else { if (rtSelected.length >= 4) { alert('Max 4 PIs'); return; } rtSelected.push(skill); }
+    // Restore saved roles
+    rtSelected.forEach(function(r){ if (savedRoles[r.id]) r._role = savedRoles[r.id]; });
     updateRtControls();
     loadRtHistory();
-    // Update sidebar highlighting only, don't re-render
+    // Update sidebar highlighting only
     document.querySelectorAll('.skill-item').forEach(function(el) {
       var sid = el.getAttribute('data-id');
       el.classList.toggle('rt-sel', !!rtSelected.find(function(r){ return r.id === sid; }));
