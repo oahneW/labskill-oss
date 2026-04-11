@@ -1,8 +1,9 @@
 # LabSkill
 
-**Distill any researcher's thinking. Talk to their academic mind.**
+**Turn academic papers into interactive research minds.**
 
 🔗 **Try it:** https://oahnew.github.io/labskill-oss
+A small tool for thinking through research ideas and experimental designs.
 
 LabSkill extracts the intellectual framework of academics from their published work, then lets you have conversations grounded in live literature search — not from a static snapshot, but pulling current papers as you ask.
 
@@ -14,9 +15,9 @@ LabSkill extracts the intellectual framework of academics from their published w
 
 **Distill** — Pick a researcher. LabSkill pulls their papers from Semantic Scholar, bioRxiv, and PubMed, searches their public talks and lab website, and synthesizes everything into a structured Skill file. The Skill captures their epistemological stance, methodological preferences, reviewing standards, and an Agentic Protocol — a search strategy derived from how this researcher actually thinks about evidence.
 
-**Chat** — Ask research questions. Before answering, the distilled PI runs targeted literature searches specific to their own epistemic standards. A neuroscientist who values fMRI/behavioral convergence will search differently from an economist who trusts RCTs. The searches are derived from each researcher's actual methodology — and both training knowledge and live search results inform the answer.
+**Chat** — Ask research questions. Before answering, the distilled persona runs targeted literature searches based on the researcher’s epistemic standards. A neuroscientist who values fMRI/behavioral convergence will search differently from an economist who trusts RCTs. The searches are derived from each researcher's actual methodology — and both training knowledge and live search results inform the answer.
 
-**Roundtable** — Assemble 2–4 distilled researchers and have them discuss a topic together. Generate a synthesis of the discussion, or save it as Markdown.
+**Roundtable** — Assemble 2–4 distilled researchers and simulate multi-expert discussions on a research question and generate a structured synthesis.
 
 ---
 
