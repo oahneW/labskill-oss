@@ -550,12 +550,6 @@ function updateRtControls() {
   pills.innerHTML = rtSelected.map(function(s) {
     return '<div class="rt-pill">' + s.name + '<span class="rt-pill-x" onclick="removeRtSkill(\'' + s.id + '\')">×</span></div>';
   }).join('');
-  if (rtSelected.length >= 2) {
-    rtHistory = [];
-    var msgEl = document.getElementById('rt-messages');
-    msgEl.innerHTML = '<div class="chat-empty"><h3>Roundtable</h3><p>Enter a topic to start.</p></div>';
-    loadRtHistory();
-  }
 }
 
 function removeRtSkill(id) {
