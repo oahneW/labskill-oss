@@ -582,7 +582,6 @@ function updateRtControls() {
   pills.innerHTML = rtSelected.map(function(s) {
     return '<div class="rt-pill">' + s.name + '<span class="rt-pill-x" onclick="removeRtSkill(\'' + s.id + '\')">×</span></div>';
   }).join('');
-  updateRolesConfig();
 }
 
 function removeRtSkill(id) {
