@@ -2,6 +2,8 @@
 
 **Distill any researcher's thinking. Talk to their academic mind.**
 
+🔗 **Try it:** https://oahnew.github.io/labskill-oss
+
 LabSkill extracts the intellectual framework of academics from their published work, then lets you have conversations grounded in live literature search — not from a static snapshot, but pulling current papers as you ask.
 
 ---
@@ -14,16 +16,16 @@ LabSkill extracts the intellectual framework of academics from their published w
 
 **Chat** — Ask research questions. Before answering, the distilled PI runs targeted literature searches specific to their own standards. Sanfey checks for fMRI/behavioral convergence because that is what his epistemological stance demands. Dana Small checks gut-brain mechanisms and effect sizes first. The searches are different because the researchers are different — and both training knowledge and live search results inform the answer.
 
-**Roundtable** — Assemble 2–4 distilled researchers and have them discuss a topic or evaluate a research idea together.
+**Roundtable** — Assemble 2–4 distilled researchers and have them discuss a topic together. Generate a synthesis of the discussion, or save it as Markdown.
 
 ---
 
 ## How to use
 
-1. Open the site and add your Anthropic API key (get one at console.anthropic.com — $5 credit lasts a long time)
+1. Open the site and add your Anthropic API key (get one at [console.anthropic.com](https://console.anthropic.com) — $5 credit lasts a long time)
 2. Search a field or pick a featured researcher to distill
-3. Click Distill and wait 1–2 minutes
-4. Save and Chat — ask about your research ideas, experimental designs, or field questions
+3. Click **Distill** and wait 1–2 minutes
+4. **Save and Chat** — ask about your research ideas, experimental designs, or field questions
 
 ---
 
@@ -43,10 +45,10 @@ Semantic Scholar · bioRxiv · PubMed · OpenAlex · Web search (talks, intervie
 
 ## License
 
-This project is licensed under the **MIT License** — use it, modify it, build with it.
+MIT — use it, modify it, build with it.
 
 ---
 
 ## Technical
 
-Open source. Runs entirely in your browser. Your API key is stored locally and never sent to any server other than Anthropic directly.
+Runs entirely in your browser. Your API key is stored locally and never sent to any server other than Anthropic directly. Open source.
