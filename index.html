@@ -477,6 +477,8 @@ function requireKey() {
   openModal(); return false;
 }
 
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);})}
+
 async function callClaude(messages, opts) {
   opts = opts || {};
   var body = { max_tokens: opts.maxTokens || 2000, messages: messages };
@@ -762,12 +764,51 @@ function setStep(n) {
   }
 }
 
+// Pre-process papers into structured insights before distillation
+async function extractPaperInsights(authorName, paperList) {
+  if (!paperList.length) return [];
+  var insights = [];
+  // Process in batches of 3
+  for (var i = 0; i < paperList.length && i < 9; i += 3) {
+    var batch = paperList.slice(i, i + 3);
+    var batchText = batch.map(function(p, j) {
+      return '[P' + (i+j+1) + '] ' + p.title + ' (' + (p.year||'?') + ', ' + p.citations + ' citations)\n' + p.abstract;
+    }).join('\n\n');
+    try {
+      var reply = await callClaude([{role:'user', content:
+        'For each paper by ' + authorName + ', extract in JSON (no markdown):\n' +
+        '[{"method":"main method/paradigm in 1 sentence","finding":"key finding in 1 sentence","contribution":"theoretical/methodological contribution in 1 sentence","evidence":"behavioral|neural|computational|review"}]\n\nPapers:\n' + batchText
+      }], { maxTokens: 500 });
+      var clean = reply.replace(/```json/g,'').replace(/```/g,'').trim();
+      var s = clean.indexOf('['), e = clean.lastIndexOf(']');
+      if (s >= 0 && e > s) {
+        var parsed = JSON.parse(clean.slice(s, e+1));
+        insights = insights.concat(parsed);
+      }
+    } catch(e2) {
+      // fallback: use raw abstract for this batch
+      batch.forEach(function(p) { insights.push({method:'',finding:p.abstract.slice(0,120),contribution:'',evidence:'unknown'}); });
+    }
+    if (i + 3 < Math.min(paperList.length, 9)) await sleep(1500);
+  }
+  return insights;
+}
+
 function buildPrompt() {
   if (curTab === 'lab') {
     if (!selAuthor) return null;
-    var top = papers.filter(function(p) { return p.abstract; }).slice(0, 6);
+    var top = papers.filter(function(p) { return p.abstract; }).slice(0, 9);
+    var insights = window._paperInsights || [];
     var papersText = top.map(function(p, i) {
-      return '[P' + (i + 1) + '] "' + p.title + '" (' + (p.year || '?') + ') ' + p.citations + ' citations\n' + p.abstract.slice(0, 200);
+      var ins = insights[i];
+      if (ins && ins.finding) {
+        return '[P' + (i+1) + '] "' + p.title + '" (' + (p.year||'?') + ', ' + p.citations + ' citations)' +
+          (ins.evidence ? ' [' + ins.evidence + ']' : '') +
+          (ins.method ? '\nMethod: ' + ins.method : '') +
+          (ins.finding ? '\nFinding: ' + ins.finding : '') +
+          (ins.contribution ? '\nContribution: ' + ins.contribution : '');
+      }
+      return '[P' + (i+1) + '] "' + p.title + '" (' + (p.year||'?') + ', ' + p.citations + ' citations)\n' + p.abstract.slice(0,200);
     }).join('\n\n');
     var goals = getChips('lab-goals') || 'topic selection, writing style';
     var pasteText = document.getElementById('paste-area').value.trim();
@@ -792,16 +833,24 @@ function buildPrompt() {
 
 async function runDistill() {
   if (!requireKey()) return;
-  var prompt = buildPrompt();
   var msg = document.getElementById('run-msg');
-  if (!prompt) {
-    msg.textContent = curTab === 'lab' ? 'Search and select a researcher first' : 'Enter a research domain';
-    return;
-  }
+  if (curTab === 'lab' && !selAuthor) { msg.textContent = 'Search and select a researcher first'; return; }
+  if (curTab === 'field' && !document.getElementById('field-name').value.trim()) { msg.textContent = 'Enter a research domain'; return; }
   var btn = document.getElementById('btn-run');
   var prog = document.getElementById('prog');
   var owrap = document.getElementById('owrap');
   btn.disabled = true; msg.textContent = ''; prog.style.display = 'block'; owrap.style.display = 'none'; setStep(1);
+
+  // Extract structured insights from papers first (lab mode only)
+  window._paperInsights = [];
+  if (curTab === 'lab' && selAuthor) {
+    msg.textContent = 'Extracting insights from papers...';
+    var topPapers = papers.filter(function(p){return p.abstract;}).slice(0, 9);
+    window._paperInsights = await extractPaperInsights(selAuthor.name, topPapers);
+    msg.textContent = '';
+  }
+
+  var prompt = buildPrompt();
   var timers = [setTimeout(function(){setStep(2);},8000), setTimeout(function(){setStep(3);},20000), setTimeout(function(){setStep(4);},35000)];
   try {
     var text = await callClaude([{ role: 'user', content: prompt }], { webSearch: true, maxTokens: 3000 });
