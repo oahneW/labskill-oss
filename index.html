@@ -200,14 +200,7 @@ footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--b
 <div class="overlay" id="modal">
   <div class="modal">
     <h3 id="mh">Welcome to LabSkill</h3>
-    <div id="mfree">
-      <p>You have <b id="fleft">3</b> free distillations. After that, bring your own Anthropic API key.</p>
-      <div class="mbtns">
-        <button class="bp" onclick="useFree()">Use free quota</button>
-        <button class="bs" onclick="showKey()">Use my own key</button>
-      </div>
-    </div>
-    <div id="mkey" style="display:none;">
+    <div id="mkey">
       <p>Your key stays in your browser session only — never sent to any server.</p>
       <input type="password" id="kin" placeholder="sk-ant-..." />
       <div class="mbtns">
@@ -452,23 +445,13 @@ function freeLeft() { return Math.max(0, FREE_QUOTA - getFreeUsed()); }
 function updateBtn() {
   var el = document.getElementById('kbtn');
   if (apiKey) { el.textContent = 'API Key set'; el.className = 'key-btn set'; }
-  else if (freeLeft() > 0) { el.textContent = freeLeft() + ' free left'; el.className = 'key-btn set'; }
   else { el.textContent = 'Add API Key'; el.className = 'key-btn unset'; }
 }
 
 function openModal() {
-  document.getElementById('fleft').textContent = freeLeft();
-  if (freeLeft() > 0 && !apiKey) {
-    document.getElementById('mfree').style.display = 'block';
-    document.getElementById('mkey').style.display = 'none';
-    document.getElementById('mh').textContent = 'Welcome to LabSkill';
-  } else {
-    document.getElementById('mfree').style.display = 'none';
-    document.getElementById('mkey').style.display = 'block';
-    document.getElementById('mh').textContent = apiKey ? 'Update API Key' : 'Add your API key';
-    setTimeout(function() { document.getElementById('kin').focus(); }, 50);
-  }
+  document.getElementById('mh').textContent = apiKey ? 'Update API Key' : 'Add your Anthropic API key';
   document.getElementById('modal').classList.add('open');
+  setTimeout(function() { document.getElementById('kin').focus(); }, 50);
 }
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
 function useFree() { usingFree = true; closeModal(); updateBtn(); }
@@ -491,46 +474,23 @@ updateBtn();
 
 function requireKey() {
   if (apiKey) return true;
-  if (freeLeft() > 0) { usingFree = true; return true; }
   openModal(); return false;
 }
 
-function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
-
-async function callClaude(messages, opts, _retry) {
+async function callClaude(messages, opts) {
   opts = opts || {};
   var body = { max_tokens: opts.maxTokens || 2000, messages: messages };
   if (opts.webSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+  // Always route through Cloudflare Worker to handle CORS
   var headers = { 'Content-Type': 'application/json' };
   if (apiKey) headers['X-User-Key'] = apiKey;
   else { incFree(); if (freeLeft() === 0) { usingFree = false; updateBtn(); } }
   var res = await fetch(PROXY_URL, { method: 'POST', headers: headers, body: JSON.stringify(body) });
   if (!res.ok) {
     var e = await res.json().catch(function() { return {}; });
-    var msg = (e.error && e.error.message) || 'API error ' + res.status;
-    if (res.status === 429 && !_retry) {
-      // Rate limited - show message and retry once after 15s
-      var rmsg = document.getElementById('run-msg');
-      if (rmsg) rmsg.textContent = 'Rate limited — retrying in 15 seconds...';
-      await sleep(15000);
-      if (rmsg) rmsg.textContent = 'Retrying...';
-      return callClaude(messages, opts, true);
-    }
-    throw new Error(msg);
+    throw new Error((e.error && e.error.message) || 'API error ' + res.status);
   }
   var d = await res.json();
-  if (d.error) {
-    var emsg = (d.error && d.error.message) || 'API error';
-    var isRL = emsg.toLowerCase().includes('rate limit') || (d.error.type === 'rate_limit_error');
-    if (isRL && !_retry) {
-      var rmsg = document.getElementById('run-msg');
-      if (rmsg) rmsg.textContent = 'Rate limited — retrying in 15 seconds...';
-      await sleep(15000);
-      if (rmsg) rmsg.textContent = 'Retrying...';
-      return callClaude(messages, opts, true);
-    }
-    throw new Error(emsg);
-  }
   return (d.content || []).filter(function(b) { return b.type === 'text'; }).map(function(b) { return b.text; }).join('\n').trim();
 }
 
