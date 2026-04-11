@@ -200,7 +200,7 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 // ── STATE ─────────────────────────────────────────────────
 var PROXY_URL = 'https://labskill-oss.venhao-huang.workers.dev/proxy';
 var CHAT_DAILY_FREE = 20;
-var apiKey = sessionStorage.getItem('ls_key') || '';
+var apiKey = localStorage.getItem('ls_key') || '';
 var mode = 'chat';
 var skills = [];
 var selectedSkill = null;
@@ -222,7 +222,7 @@ function closeModal() { document.getElementById('modal').classList.remove('open'
 function saveKey() {
   var v = document.getElementById('kin').value.trim();
   if (!v) return;
-  apiKey = v; sessionStorage.setItem('ls_key', v);
+  apiKey = v; localStorage.setItem('ls_key', v);
   updateKeyBtn(); closeModal();
 }
 document.getElementById('kin').addEventListener('keydown', function(e) { if (e.key === 'Enter') saveKey(); });
@@ -283,6 +283,15 @@ function loadChatHistory(id) { return JSON.parse(localStorage.getItem(chatKey(id
 function saveChatHistory(id, h) { localStorage.setItem(chatKey(id), JSON.stringify(h.slice(-40))); }
 function loadSummaries(id) { return JSON.parse(localStorage.getItem(sumKey(id)) || '[]'); }
 function saveSummaries(id, s) { localStorage.setItem(sumKey(id), JSON.stringify(s)); }
+function rtKey() { return 'rt:' + rtSelected.map(function(s){return s.id;}).sort().join(','); }
+function saveRtHistory() { if (rtSelected.length >= 2) localStorage.setItem(rtKey(), JSON.stringify({history:rtHistory.slice(-60),mode:discussMode})); }
+function loadRtHistory() {
+  if (rtSelected.length < 2) return;
+  try {
+    var d = JSON.parse(localStorage.getItem(rtKey()) || 'null');
+    if (d && d.history && d.history.length) { rtHistory = d.history; if (d.mode) discussMode = d.mode; renderRtHistory(); }
+  } catch(e) {}
+}
 
 function renderSidebar() {
   var el = document.getElementById('sidebar-list');
@@ -306,6 +315,7 @@ function selectSkill(id) {
   if (!skill) return;
   if (mode === 'chat') {
     selectedSkill = skill;
+    localStorage.setItem('ls_last_skill', id);
     chatHistory = loadChatHistory(id);
     summaries = loadSummaries(id);
     document.getElementById('btn-send').disabled = false;
@@ -513,6 +523,28 @@ function removeRtSkill(id) {
   updateRtControls(); renderSidebar();
 }
 
+function renderRtHistory() {
+  var msgEl = document.getElementById('rt-messages');
+  var empty = msgEl.querySelector('.chat-empty');
+  if (empty) empty.remove();
+  var qNum = 0;
+  rtHistory.forEach(function(h) {
+    if (h.role === 'user') {
+      qNum++;
+      var qDiv = document.createElement('div');
+      qDiv.style.cssText = 'font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px 0 14px;border-bottom:1px solid var(--border);margin-bottom:14px;';
+      qDiv.innerHTML = '<span style="color:var(--accent);font-weight:600;margin-right:8px;">Q' + qNum + '</span>' + escHtml(h.content);
+      msgEl.appendChild(qDiv);
+    } else {
+      var div = document.createElement('div');
+      div.className = 'rt-msg';
+      div.innerHTML = '<div class="rt-speaker">' + escHtml(h.role.toUpperCase()) + '</div><div class="rt-body">' + marked.parse(h.content) + '</div>';
+      msgEl.appendChild(div);
+    }
+  });
+  msgEl.scrollTop = msgEl.scrollHeight;
+}
+
 async function sendRoundtable() {
   if (!requireChat()) return;
   var input = document.getElementById('rt-input');
@@ -573,10 +605,12 @@ async function sendRoundtable() {
       var reply = await callClaude([{ role: 'user', content: userMsg }], sysPrompt, 400, false);
       loadDiv.querySelector('.rt-body').innerHTML = marked.parse(reply);
       rtHistory.push({ role: skill.name, content: reply });
+      saveRtHistory();
     } catch(e) {
       loadDiv.querySelector('.rt-body').textContent = 'Error: ' + e.message;
     }
     msgEl.scrollTop = msgEl.scrollHeight;
+    if (i < rtSelected.length - 1) await new Promise(function(r){ setTimeout(r, 3000); });
   }
   btn.disabled = false;
 }
@@ -621,6 +655,18 @@ function updateChatQuotaLabel() {
   }
 }
 loadSkills();
+var lastId = localStorage.getItem('ls_last_skill');
+if (lastId) {
+  var lastSkill = skills.find(function(s){ return s.id === lastId; });
+  if (lastSkill) {
+    selectedSkill = lastSkill;
+    chatHistory = loadChatHistory(lastId);
+    summaries = loadSummaries(lastId);
+    document.getElementById('btn-send').disabled = false;
+    renderChatHistory();
+    renderSidebar();
+  }
+}
 updateChatQuotaLabel();
 </script>
 </body>

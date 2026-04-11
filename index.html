@@ -429,7 +429,7 @@ footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--b
 <script>
 var FREE_QUOTA = 3;
 var PROXY_URL = 'https://labskill-oss.venhao-huang.workers.dev/proxy';
-var apiKey = sessionStorage.getItem('ls_key') || '';
+var apiKey = localStorage.getItem('ls_key') || '';
 var usingFree = false;
 var selAuthor = null;
 var papers = [];
@@ -465,7 +465,7 @@ function saveKey() {
   var v = document.getElementById('kin').value.trim();
   if (!v) return;
   apiKey = v; usingFree = false;
-  sessionStorage.setItem('ls_key', v);
+  localStorage.setItem('ls_key', v);
   updateBtn(); closeModal();
 }
 document.getElementById('kin').addEventListener('keydown', function(e) { if (e.key === 'Enter') saveKey(); });
