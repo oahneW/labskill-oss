@@ -35,6 +35,8 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 .skill-name{font-family:var(--serif);font-size:14px;margin-bottom:2px;}
 .skill-meta{font-family:var(--mono);font-size:9px;color:var(--muted);}
 .sidebar-empty{padding:20px 16px;font-size:12px;color:var(--muted);line-height:1.6;}
+.skill-tag{font-family:var(--mono);font-size:9px;background:#f0f0f0;color:var(--muted);padding:1px 6px;border-radius:2px;margin-top:3px;display:inline-block;}
+.sidebar-group{padding:8px 16px 4px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}
 
 /* MAIN AREAS */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
@@ -350,15 +352,43 @@ function renderSidebar() {
     el.innerHTML = '<div class="sidebar-empty">No skills yet.<br><a href="index.html">Distill a researcher</a> to get started.</div>';
     return;
   }
-  el.innerHTML = skills.map(function(s) {
+  // Group by tag
+  var groups = {};
+  skills.forEach(function(s) {
+    var g = s.tag || '';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(s);
+  });
+  var groupKeys = Object.keys(groups).sort(function(a,b){ return a === '' ? 1 : b === '' ? -1 : a.localeCompare(b); });
+  var html = '';
+  groupKeys.forEach(function(g) {
+    if (groupKeys.length > 1) html += '<div class="sidebar-group">' + (g || 'Untagged') + '</div>';
+    html += groups[g].map(function(s) {
     var isChatSel = mode === 'chat' && selectedSkill && selectedSkill.id === s.id;
     var isRtSel = mode === 'roundtable' && rtSelected.find(function(r) { return r.id === s.id; });
     var cls = isChatSel ? 'selected' : isRtSel ? 'rt-sel' : '';
-    return '<div class="skill-item ' + cls + '" onclick="selectSkill(\'' + s.id + '\')">' +
+    return '<div class="skill-item ' + cls + '">' +
+      '<div style="flex:1;cursor:pointer;" onclick="selectSkill(\'' + s.id + '\')">' +
       '<div class="skill-name">' + s.name + '</div>' +
       '<div class="skill-meta">' + (s.affiliation ? s.affiliation.slice(0, 30) : '') + (s.hIndex ? ' · h' + s.hIndex : '') + '</div>' +
+      (s.tag ? '<div class="skill-tag">' + escHtml(s.tag) + '</div>' : '') +
+      '</div>' +
+      '<span onclick="deleteSkill(\'' + s.id + '\',\'' + s.name.replace(/'/g, "\\'") + '\')" style="font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;padding:4px 8px;flex-shrink:0;" title="Delete">✕</span>' +
       '</div>';
-  }).join('');
+    }).join('');
+  });
+  el.innerHTML = html;
+}
+
+function editTag(id) {
+  var skill = skills.find(function(s){ return s.id === id; });
+  if (!skill) return;
+  var current = skill.tag || '';
+  var tag = prompt('Tag for "' + skill.name + '" (leave empty to remove):', current);
+  if (tag === null) return; // cancelled
+  skill.tag = tag.trim();
+  saveSkills();
+  renderSidebar();
 }
 
 function deleteSkill(id, name) {
