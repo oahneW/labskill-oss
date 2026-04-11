@@ -32,16 +32,16 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 .skill-item:hover{background:white;}
 .skill-item.selected{background:white;border-left:2px solid var(--accent);}
 .skill-item.rt-sel{background:#fff8f6;border-left:2px solid var(--accent);}
-.skill-actions{display:none!important;gap:2px;flex-shrink:0;}
-.skill-actions span{font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;padding:4px 7px;transition:color .15s;}
-.skill-actions span:hover{color:var(--ink);}
-.skill-item:hover .skill-actions{display:flex!important;}
 .skill-name{font-family:var(--serif);font-size:14px;margin-bottom:2px;}
 .skill-meta{font-family:var(--mono);font-size:9px;color:var(--muted);}
-.sidebar-empty{padding:20px 16px;font-size:12px;color:var(--muted);line-height:1.6;}
-.skill-tag{font-family:var(--mono);font-size:9px;background:#f0f0f0;color:var(--muted);padding:1px 6px;border-radius:2px;margin-top:3px;display:inline-block;}
-.sidebar-group{padding:8px 16px 4px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);user-select:none;}
+.skill-tag-label{font-family:var(--mono);font-size:9px;color:var(--accent);margin-top:2px;}
+.skill-actions{display:none;gap:0;flex-shrink:0;margin-left:4px;}
+.skill-actions span{font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer;padding:3px 5px;}
+.skill-actions span:hover{color:var(--ink);}
+.skill-item:hover .skill-actions{display:flex;}
+.sidebar-group{padding:8px 16px 4px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
 .sidebar-group:hover{color:var(--ink);}
+.sidebar-empty{padding:20px 16px;font-size:12px;color:var(--muted);line-height:1.6;}
 
 /* MAIN AREAS */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
@@ -201,7 +201,8 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
       <div class="mode-hint" id="mode-hint">Each PI makes one specific academic move per turn</div>
       <div class="rt-label">Selected PIs <span style="font-weight:400;color:var(--muted);">(2-4, click sidebar)</span></div>
       <div class="rt-selected" id="rt-selected"></div>
-      </div>
+      <div class="roles-config" id="roles-config"></div>
+    </div>
     <div class="rt-messages" id="rt-messages">
       <div class="chat-empty"><h3>Assemble a roundtable</h3><p>Select 2-4 researchers from the sidebar, enter a topic, and start a multi-PI discussion.</p></div>
     </div>
@@ -357,52 +358,58 @@ function renderSidebar() {
     return;
   }
   // Group by tag
-  var groups = {};
-  skills.forEach(function(s) {
-    var g = s.tag || '';
-    if (!groups[g]) groups[g] = [];
-    groups[g].push(s);
-  });
-  var groupKeys = Object.keys(groups).sort(function(a,b){ return a === '' ? 1 : b === '' ? -1 : a.localeCompare(b); });
+  var groups = {}, ungrouped = [];
+  skills.forEach(function(s) { if (s.tag) { if (!groups[s.tag]) groups[s.tag] = []; groups[s.tag].push(s); } else { ungrouped.push(s); } });
+  var collapsed = window._collapsed || {};
   var html = '';
-  groupKeys.forEach(function(g) {
-    if (groupKeys.length > 1) {
-      var isCollapsed = (window._collapsedGroups || {})[g];
-      var arrow = isCollapsed ? '►' : '▼';
-      html += '<div class="sidebar-group" onclick="toggleGroup('' + escHtml(g) + '')" style="cursor:pointer;">' + arrow + ' ' + (g || 'Untagged') + '</div>';
-      if (isCollapsed) { html += ''; return; }
-    }
-    html += groups[g].map(function(s) {
-    var isChatSel = mode === 'chat' && selectedSkill && selectedSkill.id === s.id;
-    var isRtSel = mode === 'roundtable' && rtSelected.find(function(r) { return r.id === s.id; });
-    var cls = isChatSel ? 'selected' : isRtSel ? 'rt-sel' : '';
-    return '<div class="skill-item ' + cls + '" data-id="' + s.id + '">' +
-      '<div style="flex:1;cursor:pointer;" onclick="selectSkill(\'' + s.id + '\')">' +
-      '<div class="skill-name">' + s.name + '</div>' +
-      '<div class="skill-meta">' + (s.affiliation ? s.affiliation.slice(0, 30) : '') + (s.hIndex ? ' · h' + s.hIndex : '') + '</div>' +
-      (s.tag ? '<div class="skill-tag">' + escHtml(s.tag) + '</div>' : '') +
-      '</div>' +
-      '<span onclick="editTag(\'' + s.id + '\')" style="font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;padding:4px 6px;flex-shrink:0;" title="Add tag">⊕</span>' +
-      '<span onclick="deleteSkill(\'' + s.id + '\',\'' + s.name.replace(/'/g, "\\'") + '\')" style="font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;padding:4px 8px;flex-shrink:0;" title="Delete">✕</span>' +
-      '</div>';
-    }).join('');
+  // Render named groups first (sorted)
+  Object.keys(groups).sort().forEach(function(g) {
+    var isCol = collapsed[g];
+    html += '<div class="sidebar-group" onclick="toggleGroup(\'' + escHtml(g) + '\')">' + (isCol ? '► ' : '▼ ') + g + '</div>';
+    if (!isCol) html += groups[g].map(function(s){ return skillHtml(s); }).join('');
   });
+  // Render ungrouped
+  if (ungrouped.length) {
+    if (Object.keys(groups).length) {
+      var isCol = collapsed['__ungrouped'];
+      html += '<div class="sidebar-group" onclick="toggleGroup(\'__ungrouped\')">' + (isCol ? '► ' : '▼ ') + 'Ungrouped</div>';
+      if (!isCol) html += ungrouped.map(function(s){ return skillHtml(s); }).join('');
+    } else {
+      html += ungrouped.map(function(s){ return skillHtml(s); }).join('');
+    }
+  }
   el.innerHTML = html;
 }
 
+function skillHtml(s) {
+  var isChatSel = mode === 'chat' && selectedSkill && selectedSkill.id === s.id;
+  var isRtSel = mode === 'roundtable' && rtSelected.find(function(r) { return r.id === s.id; });
+  var cls = isChatSel ? 'selected' : isRtSel ? 'rt-sel' : '';
+  return '<div class="skill-item ' + cls + '" data-id="' + s.id + '">' +
+    '<div style="flex:1;cursor:pointer;" onclick="selectSkill(\'' + s.id + '\')">' +
+    '<div class="skill-name">' + s.name + '</div>' +
+    '<div class="skill-meta">' + (s.affiliation ? s.affiliation.slice(0, 30) : '') + (s.hIndex ? ' · h' + s.hIndex : '') + '</div>' +
+    (s.tag ? '<div class="skill-tag-label">' + escHtml(s.tag) + '</div>' : '') +
+    '</div>' +
+    '<div class="skill-actions">' +
+    '<span onclick="editSkillGroup(\'' + s.id + '\')" title="Set group">group</span>' +
+    '<span onclick="deleteSkill(\'' + s.id + '\',\'' + s.name.replace(/'/g, "\\'") + '\')" title="Delete">✕</span>' +
+    '</div>' +
+    '</div>';
+}
+
 function toggleGroup(g) {
-  window._collapsedGroups = window._collapsedGroups || {};
-  window._collapsedGroups[g] = !window._collapsedGroups[g];
+  window._collapsed = window._collapsed || {};
+  window._collapsed[g] = !window._collapsed[g];
   renderSidebar();
 }
 
-function editTag(id) {
+function editSkillGroup(id) {
   var skill = skills.find(function(s){ return s.id === id; });
   if (!skill) return;
-  var current = skill.tag || '';
-  var tag = prompt('Group for "' + skill.name + '" (leave empty to remove):', current);
-  if (tag === null) return; // cancelled
-  skill.tag = tag.trim().toLowerCase();
+  var tag = prompt('Group name for "' + skill.name + '" (leave empty to remove):', skill.tag || '');
+  if (tag === null) return;
+  skill.tag = tag.trim();
   saveSkills();
   renderSidebar();
 }
@@ -438,21 +445,11 @@ function selectSkill(id) {
     if (!chatHistory.length) generateStarters(skill);
   } else {
     var idx = rtSelected.findIndex(function(r) { return r.id === id; });
-    // Save existing roles before any changes
-    var savedRoles = {};
-    rtSelected.forEach(function(r){ if (r._role) savedRoles[r.id] = r._role; });
     if (idx > -1) { rtSelected.splice(idx, 1); currentRtKey = ''; }
     else { if (rtSelected.length >= 4) { alert('Max 4 PIs'); return; } rtSelected.push(skill); }
-    // Restore saved roles
-    rtSelected.forEach(function(r){ if (savedRoles[r.id]) r._role = savedRoles[r.id]; });
     updateRtControls();
     loadRtHistory();
-    // Update sidebar highlighting only
-    document.querySelectorAll('.skill-item').forEach(function(el) {
-      var sid = el.getAttribute('data-id');
-      el.classList.toggle('rt-sel', !!rtSelected.find(function(r){ return r.id === sid; }));
-      el.classList.remove('selected');
-    });
+    renderSidebar();
   }
 }
 
@@ -627,7 +624,7 @@ function setDiscussMode(m) {
   var hints = {
     academic: 'Each PI makes one specific academic move per turn',
     adversarial: 'Two PIs debate opposing positions head-to-head',
-    roles: 'Click the role badge on each PI to cycle: theorist → methodologist → critic → synthesizer',
+    roles: 'Assign each PI a role using the dropdowns above',
     review: 'Structured peer review: strength · fatal flaw · verdict',
     socratic: 'One PI asks probing questions only — no opinions, just Socratic questioning'
   };
@@ -636,16 +633,29 @@ function setDiscussMode(m) {
     document.getElementById('dm-' + x).classList.toggle('active', x === m);
   });
   updateRtControls();
+  updateRolesConfig();
 }
 
-
+function updateRolesConfig() {
+  var el = document.getElementById('roles-config');
+  if (!el) return;
+  if (discussMode !== 'roles' || rtSelected.length < 2) { el.style.display = 'none'; return; }
+  var roleOptions = ['theorist', 'methodologist', 'critic', 'synthesizer'];
+  el.style.display = 'flex';
+  el.innerHTML = '<span style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-right:4px;">Assign roles:</span>' +
+    rtSelected.map(function(s, i) {
+      var opts = roleOptions.map(function(r) {
+        return '<option value="' + r + '"' + (i % 4 === roleOptions.indexOf(r) ? ' selected' : '') + '>' + r + '</option>';
+      }).join('');
+      return '<div class="role-row"><span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + s.name.split(' ').pop() + '</span>' +
+        '<select class="role-select" data-id="' + s.id + '">' + opts + '</select></div>';
+    }).join('');
+}
 
 function getAssignedRole(skillId, index) {
   var skill = rtSelected.find(function(s){ return s.id === skillId; });
   if (skill && skill._role) return skill._role;
-  var roles = ['theorist','methodologist','critic','synthesizer'];
-  if (skill) { skill._role = roles[index % 4]; }
-  return roles[index % 4];
+  return ['theorist','methodologist','critic','synthesizer'][index % 4];
 }
 
 function cycleRole(id) {
