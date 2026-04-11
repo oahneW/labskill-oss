@@ -14,7 +14,7 @@ LabSkill extracts the intellectual framework of academics from their published w
 
 **Distill** — Pick a researcher. LabSkill pulls their papers from Semantic Scholar, bioRxiv, and PubMed, searches their public talks and lab website, and synthesizes everything into a structured Skill file. The Skill captures their epistemological stance, methodological preferences, reviewing standards, and an Agentic Protocol — a search strategy derived from how this researcher actually thinks about evidence.
 
-**Chat** — Ask research questions. Before answering, the distilled PI runs targeted literature searches specific to their own standards. Sanfey checks for fMRI/behavioral convergence because that is what his epistemological stance demands. Dana Small checks gut-brain mechanisms and effect sizes first. The searches are different because the researchers are different — and both training knowledge and live search results inform the answer.
+**Chat** — Ask research questions. Before answering, the distilled PI runs targeted literature searches specific to their own epistemic standards. A neuroscientist who values fMRI/behavioral convergence will search differently from an economist who trusts RCTs. The searches are derived from each researcher's actual methodology — and both training knowledge and live search results inform the answer.
 
 **Roundtable** — Assemble 2–4 distilled researchers and have them discuss a topic together. Generate a synthesis of the discussion, or save it as Markdown.
 

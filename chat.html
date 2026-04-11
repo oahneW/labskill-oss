@@ -560,6 +560,7 @@ function setDiscussMode(m) {
   ['academic', 'adversarial', 'roles', 'review', 'socratic'].forEach(function(x) {
     document.getElementById('dm-' + x).classList.toggle('active', x === m);
   });
+  updateRtControls();
   updateRolesConfig();
 }
 
@@ -580,14 +581,30 @@ function updateRolesConfig() {
 }
 
 function getAssignedRole(skillId, index) {
-  var sel = document.querySelector('.role-select[data-id="' + skillId + '"]');
-  if (sel) return sel.value;
+  var skill = rtSelected.find(function(s){ return s.id === skillId; });
+  if (skill && skill._role) return skill._role;
   return ['theorist','methodologist','critic','synthesizer'][index % 4];
+}
+
+function cycleRole(id) {
+  var roles = ['theorist','methodologist','critic','synthesizer'];
+  var skill = rtSelected.find(function(s){ return s.id === id; });
+  if (!skill) return;
+  var idx = roles.indexOf(skill._role || 'theorist');
+  skill._role = roles[(idx + 1) % 4];
+  updateRtControls();
 }
 
 function updateRtControls() {
   var pills = document.getElementById('rt-selected');
-  pills.innerHTML = rtSelected.map(function(s) {
+  var roles = ['theorist','methodologist','critic','synthesizer'];
+  pills.innerHTML = rtSelected.map(function(s, i) {
+    if (discussMode === 'roles') {
+      if (!s._role) s._role = roles[i % 4];
+      return '<div class="rt-pill" style="cursor:default;">' + s.name +
+        ' <span style="font-family:var(--mono);font-size:9px;color:var(--accent);cursor:pointer;border:1px solid var(--accent);padding:1px 5px;margin:0 4px;" onclick="cycleRole(\'' + s.id + '\')" title="Click to change role">' + s._role + ' ▸</span>' +
+        '<span class="rt-pill-x" onclick="removeRtSkill(\'' + s.id + '\')">×</span></div>';
+    }
     return '<div class="rt-pill">' + s.name + '<span class="rt-pill-x" onclick="removeRtSkill(\'' + s.id + '\')">×</span></div>';
   }).join('');
 }
