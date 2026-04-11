@@ -2,34 +2,36 @@
 
 **Distill any researcher's thinking. Talk to their academic mind.**
 
-LabSkill lets you extract the intellectual framework of top academics from their published work — then have real conversations grounded in live literature search.
+LabSkill extracts the intellectual framework of academics from their published work, then lets you have conversations grounded in live literature search — not from a static snapshot, but pulling current papers as you ask.
 
 ---
 
 ## What it does
 
-**Discover** — Search any research field and find the most influential researchers working in it right now.
+**Discover** — Search any research field and surface the most influential researchers working in it.
 
 **Distill** — Pick a researcher. LabSkill pulls their papers from Semantic Scholar, bioRxiv, and PubMed, searches their public talks and lab website, and synthesizes everything into a structured Skill file. The Skill captures their epistemological stance, methodological preferences, reviewing standards, and an Agentic Protocol — a search strategy derived from how this researcher actually thinks about evidence.
 
-**Chat** — Ask research questions. The distilled PI searches current literature before answering, not from memory. The searches are specific to that researcher's standards: Sanfey checks for fMRI/behavioral convergence because that's what his epistemological stance demands. Dana Small checks gut-brain mechanisms and effect sizes first. Different researchers search differently.
+**Chat** — Ask research questions. Before answering, the distilled PI runs targeted literature searches specific to their own standards. Sanfey checks for fMRI/behavioral convergence because that is what his epistemological stance demands. Dana Small checks gut-brain mechanisms and effect sizes first. The searches are different because the researchers are different — and both training knowledge and live search results inform the answer.
 
-**Roundtable** — Assemble 2-4 distilled researchers and have them discuss a topic or evaluate a research idea together.
+**Roundtable** — Assemble 2–4 distilled researchers and have them discuss a topic or evaluate a research idea together.
 
 ---
 
 ## How to use
 
-1. Go to the site and add your Anthropic API key (get one at console.anthropic.com — $5 credit lasts a long time)
+1. Open the site and add your Anthropic API key (get one at console.anthropic.com — $5 credit lasts a long time)
 2. Search a field or pick a featured researcher to distill
-3. Click Distill and wait 1-2 minutes
+3. Click Distill and wait 1–2 minutes
 4. Save and Chat — ask about your research ideas, experimental designs, or field questions
 
 ---
 
-## What this is not
+## Disclaimer
 
-LabSkill builds persona models from publicly available sources. The distilled researcher is not the real person — it is a structured approximation based on their papers, talks, and public statements. Do not cite it as representing their actual views. Use it as a thinking tool, not an authority.
+LabSkill builds persona models from publicly available sources including published papers, public lectures, interviews, and lab websites. The distilled personas are structured approximations — they are not the real researchers, are not authorized by them, and should not be cited as representing their actual views or opinions. Use as a thinking tool only.
+
+If you are a researcher whose work is included and have concerns, please open a GitHub issue.
 
 ---
 
@@ -39,8 +41,16 @@ Semantic Scholar · bioRxiv · PubMed · OpenAlex · Web search (talks, intervie
 
 ---
 
+## License
+
+This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)** license.
+
+You are free to use, share, and adapt this work for non-commercial purposes, with attribution. Commercial use is not permitted without explicit permission.
+
+[View license](https://creativecommons.org/licenses/by-nc/4.0/)
+
+---
+
 ## Technical
 
-Open source. Runs entirely in your browser. Your API key is stored locally and never sent to any server other than Anthropic.
-
-MIT License
+Open source. Runs entirely in your browser. Your API key is stored locally and never sent to any server other than Anthropic directly.
