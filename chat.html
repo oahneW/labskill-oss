@@ -209,6 +209,7 @@ var summaries = [];
 var rtSelected = [];
 var rtHistory = [];
 var discussMode = 'academic';
+var currentRtKey = '';
 var SUMMARY_EVERY = 10;
 
 // ── KEY MANAGEMENT ────────────────────────────────────────
@@ -280,17 +281,48 @@ function saveSkills() { localStorage.setItem('labskill_skills', JSON.stringify(s
 function chatKey(id) { return 'chat:' + id; }
 function sumKey(id) { return 'sum:' + id; }
 function loadChatHistory(id) { return JSON.parse(localStorage.getItem(chatKey(id)) || '[]'); }
-function saveChatHistory(id, h) { localStorage.setItem(chatKey(id), JSON.stringify(h.slice(-40))); }
+function saveChatHistory(id, h) {
+  try {
+    localStorage.setItem(chatKey(id), JSON.stringify(h.slice(-30)));
+  } catch(e) {
+    // Storage full - keep only recent chats
+    Object.keys(localStorage).filter(function(k){return k.startsWith('chat:');}).forEach(function(k){localStorage.removeItem(k);});
+    try { localStorage.setItem(chatKey(id), JSON.stringify(h.slice(-10))); } catch(e2) {}
+  }
+}
 function loadSummaries(id) { return JSON.parse(localStorage.getItem(sumKey(id)) || '[]'); }
 function saveSummaries(id, s) { localStorage.setItem(sumKey(id), JSON.stringify(s)); }
 function rtKey() { return 'rt:' + rtSelected.map(function(s){return s.id;}).sort().join(','); }
-function saveRtHistory() { if (rtSelected.length >= 2) localStorage.setItem(rtKey(), JSON.stringify({history:rtHistory.slice(-60),mode:discussMode})); }
-function loadRtHistory() {
+function saveRtHistory() {
   if (rtSelected.length < 2) return;
   try {
-    var d = JSON.parse(localStorage.getItem(rtKey()) || 'null');
-    if (d && d.history && d.history.length) { rtHistory = d.history; if (d.mode) discussMode = d.mode; renderRtHistory(); }
-  } catch(e) {}
+    var data = JSON.stringify({history:rtHistory.slice(-30),mode:discussMode});
+    localStorage.setItem(rtKey(), data);
+  } catch(e) {
+    // Storage full - clear old rt histories and try with fewer entries
+    Object.keys(localStorage).filter(function(k){return k.startsWith('rt:');}).forEach(function(k){localStorage.removeItem(k);});
+    try { localStorage.setItem(rtKey(), JSON.stringify({history:rtHistory.slice(-10),mode:discussMode})); } catch(e2) {}
+  }
+}
+function loadRtHistory() {
+  if (rtSelected.length < 2) return;
+  var key = rtKey();
+  if (key === currentRtKey) return; // same combination, don't reload
+  currentRtKey = key;
+  try {
+    var d = JSON.parse(localStorage.getItem(key) || 'null');
+    rtHistory = (d && d.history) ? d.history : [];
+    if (d && d.mode) discussMode = d.mode;
+    var msgEl = document.getElementById('rt-messages');
+    msgEl.innerHTML = '';
+    if (rtHistory.length) {
+      renderRtHistory();
+    } else {
+      msgEl.innerHTML = '<div class="chat-empty"><h3>Roundtable</h3><p>Enter a topic to start.</p></div>';
+    }
+  } catch(e) {
+    rtHistory = [];
+  }
 }
 
 function renderSidebar() {
@@ -324,9 +356,11 @@ function selectSkill(id) {
     if (!chatHistory.length) generateStarters(skill);
   } else {
     var idx = rtSelected.findIndex(function(r) { return r.id === id; });
-    if (idx > -1) rtSelected.splice(idx, 1);
+    if (idx > -1) { rtSelected.splice(idx, 1); currentRtKey = ''; }
     else { if (rtSelected.length >= 4) { alert('Max 4 PIs'); return; } rtSelected.push(skill); }
-    updateRtControls(); renderSidebar();
+    updateRtControls();
+    loadRtHistory();
+    renderSidebar();
   }
 }
 
@@ -526,7 +560,10 @@ function updateRtControls() {
 
 function removeRtSkill(id) {
   rtSelected = rtSelected.filter(function(s) { return s.id !== id; });
-  updateRtControls(); renderSidebar();
+  currentRtKey = '';
+  updateRtControls();
+  loadRtHistory();
+  renderSidebar();
 }
 
 function renderRtHistory() {
@@ -628,6 +665,7 @@ function setMode(m) {
   document.getElementById('tab-rt').classList.toggle('active', m === 'roundtable');
   document.getElementById('mode-chat').style.display = m === 'chat' ? 'flex' : 'none';
   document.getElementById('mode-roundtable').style.display = m === 'roundtable' ? 'flex' : 'none';
+  if (m === 'roundtable') loadRtHistory();
   renderSidebar();
 }
 
