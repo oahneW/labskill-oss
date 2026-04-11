@@ -161,9 +161,6 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
       <div class="starter-btns" id="starter-btns"></div>
     </div>
     <div class="chat-input-wrap">
-      <div style="display:flex;justify-content:flex-end;padding-bottom:6px;">
-        <button onclick="exportChat()" style="font-family:var(--mono);font-size:10px;padding:4px 12px;border:1px solid var(--border);background:white;cursor:pointer;color:var(--muted);" id="btn-export-chat">Save as Markdown</button>
-      </div>
       <div class="chat-input-row">
         <textarea class="chat-input" id="chat-input" placeholder="Ask a research question..." rows="1"></textarea>
         <button class="chat-send" id="btn-send" onclick="sendChat()" disabled>Send</button>
@@ -188,11 +185,6 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
     </div>
     <div class="rt-messages" id="rt-messages">
       <div class="chat-empty"><h3>Assemble a roundtable</h3><p>Select 2-4 researchers from the sidebar, enter a topic, and start a multi-PI discussion.</p></div>
-    </div>
-    <div class="synthesis-bar" id="synthesis-bar">
-      <button class="synthesis-btn" id="btn-synthesis" onclick="generateSynthesis()">Generate Synthesis</button>
-      <button class="synthesis-btn" onclick="exportRoundtable()">Save as Markdown</button>
-      <span style="font-family:var(--mono);font-size:10px;color:var(--muted);" id="synthesis-status"></span>
     </div>
     <div class="rt-input-wrap">
       <div class="rt-input-row">
@@ -588,9 +580,6 @@ function renderRtHistory() {
     }
   });
   msgEl.scrollTop = msgEl.scrollHeight;
-  if (rtHistory.length > 0) {
-    document.getElementById('synthesis-bar').style.display = 'flex';
-  }
 }
 
 async function sendRoundtable() {
@@ -661,106 +650,6 @@ async function sendRoundtable() {
     if (i < rtSelected.length - 1) await new Promise(function(r){ setTimeout(r, 3000); });
   }
   btn.disabled = false;
-  // Show synthesis button after discussion
-  if (rtHistory.length > 0) {
-    document.getElementById('synthesis-bar').style.display = 'flex';
-  }
-}
-
-function exportChat() {
-  if (!chatHistory.length || !selectedSkill) return;
-  var date = new Date().toLocaleDateString();
-  var md = '# Chat with ' + selectedSkill.name + '\n';
-  md += '_' + date + '_\n\n---\n\n';
-  chatHistory.forEach(function(h) {
-    if (h.role === 'user') {
-      md += '**You:** ' + h.content + '\n\n';
-    } else {
-      md += '**' + selectedSkill.name + ':** ' + h.content + '\n\n';
-    }
-  });
-  var blob = new Blob([md], {type:'text/markdown'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'chat-' + selectedSkill.name.replace(/\s+/g,'-').toLowerCase() + '-' + new Date().toISOString().slice(0,10) + '.md';
-  a.click();
-}
-
-function exportRoundtable() {
-  if (!rtHistory.length) return;
-  var piNames = rtSelected.map(function(s){return s.name;}).join(', ');
-  var date = new Date().toLocaleDateString();
-  var md = '# Roundtable: ' + piNames + '\n';
-  md += '_' + date + ' · ' + discussMode + ' mode_\n\n---\n\n';
-  var qNum = 0;
-  rtHistory.forEach(function(h) {
-    if (h.role === 'user') {
-      qNum++;
-      md += '## Q' + qNum + '. ' + h.content + '\n\n';
-    } else {
-      md += '### ' + h.role + '\n\n' + h.content + '\n\n';
-    }
-  });
-  // Include synthesis if present
-  var synthEl = document.querySelector('.synthesis-block');
-  if (synthEl) {
-    md += '---\n\n## Synthesis\n\n' + synthEl.innerText;
-  }
-  var blob = new Blob([md], {type:'text/markdown'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'roundtable-' + new Date().toISOString().slice(0,10) + '.md';
-  a.click();
-}
-
-async function generateSynthesis() {
-  if (!rtHistory.length) return;
-  var btn = document.getElementById('btn-synthesis');
-  var status = document.getElementById('synthesis-status');
-  btn.disabled = true;
-  btn.textContent = 'Generating...';
-  status.textContent = '';
-
-  var piNames = rtSelected.map(function(s){return s.name;}).join(', ');
-  var transcript = rtHistory.map(function(h){
-    return (h.role === 'user' ? 'QUESTION' : h.role.toUpperCase()) + ':
-' + h.content;
-  }).join('
-
----
-
-');
-
-  var system = 'You are synthesizing an academic roundtable discussion between ' + piNames + '. ' +
-    'Read the discussion carefully and identify what dimensions are most relevant to synthesize ' +
-    '(e.g. hypothesis, methodology, theoretical disagreements, key risks, reviewer concerns, open questions — whatever actually matters for THIS discussion). ' +
-    'Do not use a fixed template. Generate 3-5 synthesis points that capture the most actionable insights. ' +
-    'Format as markdown with clear headers. Be specific, not generic. Under 300 words.';
-
-  try {
-    var reply = await callClaude(
-      [{ role: 'user', content: 'Synthesize this roundtable discussion:
-
-' + transcript }],
-      system, 600, false
-    );
-
-    var msgEl = document.getElementById('rt-messages');
-    var synthDiv = document.createElement('div');
-    synthDiv.className = 'synthesis-block';
-    synthDiv.innerHTML = '<h4>Synthesis</h4>' + marked.parse(reply);
-    msgEl.appendChild(synthDiv);
-    msgEl.scrollTop = msgEl.scrollHeight;
-
-    btn.textContent = 'Regenerate';
-    btn.disabled = false;
-    status.textContent = 'Generated';
-    setTimeout(function(){ status.textContent = ''; }, 2000);
-  } catch(e) {
-    btn.textContent = 'Generate Synthesis';
-    btn.disabled = false;
-    status.textContent = 'Error: ' + e.message;
-  }
 }
 
 // ── MODE SWITCHING ────────────────────────────────────────
