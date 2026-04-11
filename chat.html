@@ -97,6 +97,14 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 .rt-input:focus{border-color:var(--ink);}
 .rt-send{background:var(--ink);color:var(--cream);font-family:var(--mono);font-size:11px;padding:11px 18px;border:none;cursor:pointer;height:44px;transition:opacity .2s;}
 .rt-send:disabled{opacity:.3;cursor:not-allowed;}.rt-send:not(:disabled):hover{opacity:.8;}
+.synthesis-bar{padding:10px 32px;border-top:1px solid var(--border);background:#fafaf8;display:none;align-items:center;gap:12px;flex-shrink:0;}
+.synthesis-btn{font-family:var(--mono);font-size:11px;padding:6px 16px;background:white;border:1px solid var(--ink);cursor:pointer;color:var(--ink);transition:all .15s;}
+.synthesis-btn:hover{background:var(--ink);color:white;}
+.synthesis-block{margin:16px 0;padding:16px 20px;background:#f0f4ff;border-left:3px solid #4a6cf7;font-size:14px;line-height:1.8;}
+.synthesis-block h4{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#4a6cf7;margin-bottom:10px;}
+.roles-config{padding:8px 32px;background:#fafaf8;border-bottom:1px solid var(--border);display:none;flex-wrap:wrap;gap:8px;align-items:center;}
+.role-row{display:flex;align-items:center;gap:6px;font-size:12px;}
+.role-select{font-family:var(--mono);font-size:10px;padding:3px 8px;border:1px solid var(--border);background:white;outline:none;cursor:pointer;}
 
 /* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;}
@@ -161,6 +169,9 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
       <div class="starter-btns" id="starter-btns"></div>
     </div>
     <div class="chat-input-wrap">
+      <div style="display:flex;justify-content:flex-end;padding-bottom:6px;">
+        <button onclick="exportChat()" style="font-family:var(--mono);font-size:10px;padding:4px 12px;border:1px solid var(--border);background:white;cursor:pointer;color:var(--muted);">Save as Markdown</button>
+      </div>
       <div class="chat-input-row">
         <textarea class="chat-input" id="chat-input" placeholder="Ask a research question..." rows="1"></textarea>
         <button class="chat-send" id="btn-send" onclick="sendChat()" disabled>Send</button>
@@ -170,6 +181,7 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 
   <!-- ROUNDTABLE MODE -->
   <div class="main" id="mode-roundtable" style="display:none;">
+    <div class="roles-config" id="roles-config"></div>
     <div class="rt-config">
       <div class="rt-label">Discussion mode</div>
       <div class="mode-btns">
@@ -185,6 +197,11 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
     </div>
     <div class="rt-messages" id="rt-messages">
       <div class="chat-empty"><h3>Assemble a roundtable</h3><p>Select 2-4 researchers from the sidebar, enter a topic, and start a multi-PI discussion.</p></div>
+    </div>
+    <div class="synthesis-bar" id="synthesis-bar">
+      <button class="synthesis-btn" id="btn-synthesis" onclick="generateSynthesis()">Generate Synthesis</button>
+      <button class="synthesis-btn" onclick="exportRoundtable()">Save as Markdown</button>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--muted);" id="synthesis-status"></span>
     </div>
     <div class="rt-input-wrap">
       <div class="rt-input-row">
@@ -535,7 +552,7 @@ function setDiscussMode(m) {
   var hints = {
     academic: 'Each PI makes one specific academic move per turn',
     adversarial: 'Two PIs debate opposing positions head-to-head',
-    roles: 'Each PI plays a fixed role: theorist / methodologist / critic / synthesizer',
+    roles: 'Assign each PI a role using the dropdowns above',
     review: 'Structured peer review: strength · fatal flaw · verdict',
     socratic: 'One PI asks probing questions only — no opinions, just Socratic questioning'
   };
@@ -543,6 +560,29 @@ function setDiscussMode(m) {
   ['academic', 'adversarial', 'roles', 'review', 'socratic'].forEach(function(x) {
     document.getElementById('dm-' + x).classList.toggle('active', x === m);
   });
+  updateRolesConfig();
+}
+
+function updateRolesConfig() {
+  var el = document.getElementById('roles-config');
+  if (!el) return;
+  if (discussMode !== 'roles' || rtSelected.length < 2) { el.style.display = 'none'; return; }
+  var roleOptions = ['theorist', 'methodologist', 'critic', 'synthesizer'];
+  el.style.display = 'flex';
+  el.innerHTML = '<span style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-right:4px;">Assign roles:</span>' +
+    rtSelected.map(function(s, i) {
+      var opts = roleOptions.map(function(r) {
+        return '<option value="' + r + '"' + (i % 4 === roleOptions.indexOf(r) ? ' selected' : '') + '>' + r + '</option>';
+      }).join('');
+      return '<div class="role-row"><span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + s.name.split(' ').pop() + '</span>' +
+        '<select class="role-select" data-id="' + s.id + '">' + opts + '</select></div>';
+    }).join('');
+}
+
+function getAssignedRole(skillId, index) {
+  var sel = document.querySelector('.role-select[data-id="' + skillId + '"]');
+  if (sel) return sel.value;
+  return ['theorist','methodologist','critic','synthesizer'][index % 4];
 }
 
 function updateRtControls() {
@@ -580,6 +620,10 @@ function renderRtHistory() {
     }
   });
   msgEl.scrollTop = msgEl.scrollHeight;
+  if (rtHistory.length > 0) {
+    var sb = document.getElementById('synthesis-bar');
+    if (sb) sb.style.display = 'flex';
+  }
 }
 
 async function sendRoundtable() {
@@ -620,8 +664,7 @@ async function sendRoundtable() {
       sysPrompt = 'You are ' + skill.name + '. You must ' + stance + ' the proposition based on your research framework.\n\nProfile:\n' + (skill.skillContent || '').slice(0, 900) + '\n\nBe direct and specific. 80-120 words.';
       userMsg = 'Proposition: "' + text + '"';
     } else if (discussMode === 'roles') {
-      var roles = ['theorist', 'methodologist', 'critic', 'synthesizer'];
-      var myRole = roles[i % roles.length];
+      var myRole = getAssignedRole(skill.id, i);
       sysPrompt = 'You are ' + skill.name + ', playing the role of ' + myRole + ' in a structured discussion.\n\nProfile:\n' + (skill.skillContent || '').slice(0, 900) + '\n\nRespond strictly from your ' + myRole + ' role. 80-120 words.';
       userMsg = 'Topic: "' + text + '"' + (transcript ? '\n\nDiscussion so far:\n' + transcript : '');
     } else if (discussMode === 'review') {
@@ -650,6 +693,64 @@ async function sendRoundtable() {
     if (i < rtSelected.length - 1) await new Promise(function(r){ setTimeout(r, 3000); });
   }
   btn.disabled = false;
+  if (rtHistory.length > 0) document.getElementById('synthesis-bar').style.display = 'flex';
+}
+
+function exportChat() {
+  if (!chatHistory.length || !selectedSkill) return;
+  var md = '# Chat with ' + selectedSkill.name + '\n_' + new Date().toLocaleDateString() + '_\n\n---\n\n';
+  chatHistory.forEach(function(h) {
+    md += (h.role === 'user' ? '**You:** ' : '**' + selectedSkill.name + ':** ') + h.content + '\n\n';
+  });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([md], {type:'text/markdown'}));
+  a.download = 'chat-' + selectedSkill.name.replace(/\s+/g,'-').toLowerCase() + '-' + new Date().toISOString().slice(0,10) + '.md';
+  a.click();
+}
+
+function exportRoundtable() {
+  if (!rtHistory.length) return;
+  var piNames = rtSelected.map(function(s){return s.name;}).join(', ');
+  var md = '# Roundtable: ' + piNames + '\n_' + new Date().toLocaleDateString() + ' · ' + discussMode + '_\n\n---\n\n';
+  var qNum = 0;
+  rtHistory.forEach(function(h) {
+    if (h.role === 'user') { qNum++; md += '## Q' + qNum + '. ' + h.content + '\n\n'; }
+    else { md += '### ' + h.role + '\n\n' + h.content + '\n\n'; }
+  });
+  var synthEl = document.querySelector('.synthesis-block');
+  if (synthEl) md += '---\n\n## Synthesis\n\n' + synthEl.innerText;
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([md], {type:'text/markdown'}));
+  a.download = 'roundtable-' + new Date().toISOString().slice(0,10) + '.md';
+  a.click();
+}
+
+async function generateSynthesis() {
+  if (!rtHistory.length) return;
+  var btn = document.getElementById('btn-synthesis');
+  var status = document.getElementById('synthesis-status');
+  btn.disabled = true; btn.textContent = 'Generating...';
+  var piNames = rtSelected.map(function(s){return s.name;}).join(', ');
+  var transcript = rtHistory.map(function(h){
+    return (h.role === 'user' ? 'QUESTION' : h.role.toUpperCase()) + ':\n' + h.content;
+  }).join('\n\n---\n\n');
+  var system = 'You are synthesizing an academic roundtable between ' + piNames + '. ' +
+    'Identify what dimensions are most relevant (e.g. hypothesis, methodology, disagreements, risks, open questions). ' +
+    'Generate 3-5 synthesis points specific to THIS discussion. Format as markdown with headers. Under 300 words.';
+  try {
+    var reply = await callClaude([{role:'user', content:'Synthesize:\n\n' + transcript}], system, 600, false);
+    var msgEl = document.getElementById('rt-messages');
+    var div = document.createElement('div');
+    div.className = 'synthesis-block';
+    div.innerHTML = '<h4>Synthesis</h4>' + marked.parse(reply);
+    msgEl.appendChild(div);
+    msgEl.scrollTop = msgEl.scrollHeight;
+    btn.textContent = 'Regenerate'; btn.disabled = false;
+    status.textContent = 'Done'; setTimeout(function(){status.textContent='';}, 2000);
+  } catch(e) {
+    btn.textContent = 'Generate Synthesis'; btn.disabled = false;
+    status.textContent = 'Error: ' + e.message;
+  }
 }
 
 // ── MODE SWITCHING ────────────────────────────────────────

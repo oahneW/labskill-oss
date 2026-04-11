@@ -43,11 +43,7 @@ Semantic Scholar · bioRxiv · PubMed · OpenAlex · Web search (talks, intervie
 
 ## License
 
-This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)** license.
-
-You are free to use, share, and adapt this work for non-commercial purposes, with attribution. Commercial use is not permitted without explicit permission.
-
-[View license](https://creativecommons.org/licenses/by-nc/4.0/)
+This project is licensed under the **MIT License** — use it, modify it, build with it.
 
 ---
 
