@@ -528,16 +528,23 @@ async function sendChat() {
     var epistemicContext = extractPrioritizedSkill(selectedSkill.skillContent || '', 1600);
 
     var step1System = 'You are ' + selectedSkill.name + '. You must decide what literature to search before answering a research question.\n\n' +
-      (agenticSection ? 'YOUR AGENTIC PROTOCOL (follow this closely):\n' + agenticSection + '\n\n' : '') +
+      (agenticSection ? 'YOUR AGENTIC PROTOCOL (follow this closely ONLY when the question is relevant to your specific research area):\n' + agenticSection + '\n\n' : '') +
       'YOUR RESEARCH FRAMEWORK:\n' + epistemicContext.slice(0, 800) + '\n\n' +
-      'TASK: Generate 2-4 specific search queries that reflect YOUR epistemic standards.\n' +
-      'Each query should target a different type of evidence you value:\n' +
-      '- One query for the core empirical evidence\n' +
-      '- One query for methodological quality/replication status\n' +
-      '- One query for your specific theoretical framework\n' +
-      '- (Optional) One query for recent meta-analyses or reviews\n\n' +
+      'TASK: Generate 2-4 specific search queries.\n\n' +
+      'FIRST, judge the question type:\n' +
+      'A) If the question is DIRECTLY about your research area → use your Agentic Protocol to generate domain-specific queries\n' +
+      'B) If the question is about GENERAL experimental design, statistics, or methodology → generate queries about that specific design/stats topic, NOT about your niche framework. E.g., for "how many trials do I need" → search for power analysis and trial design literature, not for your pet theory.\n' +
+      'C) If the question is MIXED → generate some domain-specific and some general methodology queries\n\n' +
+      'For type A queries, target different evidence types:\n' +
+      '- Core empirical evidence\n' +
+      '- Methodological quality/replication\n' +
+      '- Your specific theoretical framework\n\n' +
+      'For type B queries, target:\n' +
+      '- Directly relevant methodological literature\n' +
+      '- Best practices and established guidelines\n' +
+      '- Similar experimental designs in the broader field\n\n' +
       'Return ONLY a JSON array of strings. Make queries specific and searchable (3-8 words each).\n' +
-      'BAD: ["decision making research"]\nGOOD: ["loss aversion breathing manipulation fMRI 2023", "interoception risk decision meta-analysis"]';
+      'BAD: ["decision making research"]\nGOOD: ["loss aversion breathing manipulation fMRI 2023", "optimal trial count risk preference estimation"]';
 
     var step1Reply = await callClaude([{ role: 'user', content: 'Research question: ' + msg }], step1System, 400, false);
 
@@ -576,7 +583,13 @@ async function sendChat() {
       '- Be specific and honest — if search results are thin, say so clearly\n' +
       '- Perform quantitative reasoning when the question involves numbers or experimental design\n' +
       '- This is a real conversation, not a lecture. Keep it focused.\n' +
-      '- 200-500 words unless the question requires more or less';
+      '- 200-500 words unless the question requires more or less\n\n' +
+      'CRITICAL — ADAPTIVE EXPERTISE:\n' +
+      '- Judge whether the question actually requires your specific research framework, or whether it is a general methodology/design/statistics question that any competent researcher could answer.\n' +
+      '- If the question is about general experimental design (e.g. trial counts, counterbalancing, block structure, which condition to remove), answer it with clear analytical reasoning. Do NOT force your niche framework onto every question.\n' +
+      '- Only apply your specific theoretical lens when the question genuinely intersects with your area of expertise.\n' +
+      '- When a question involves concrete numbers or parameters, DO THE MATH FIRST. Calculate expected values, count trials, verify arithmetic before giving advice.\n' +
+      '- Think like a helpful senior colleague, not like a one-trick theorist. Your value is your judgment and rigor, not just your pet framework.';
 
     var messages = recentHistory.slice(0, -1).map(function(h) { return { role: h.role, content: h.content }; });
     messages.push({ role: 'user', content: msg });
@@ -842,17 +855,17 @@ async function sendRoundtable() {
     var litNote = (i > 0 && sharedLitContext) ? '\n\nLITERATURE CONTEXT (from prior speaker\'s search):\n' + sharedLitContext.slice(0, 600) + '\n' : '';
 
     if (discussMode === 'academic') {
-      sysPrompt = 'You are ' + skill.name + ' in an academic roundtable.\n\nYour research profile:\n' + persona + '\n\nMake ONE specific academic move: question an assumption, offer a methodological concern, connect to your work, or propose an alternative interpretation. Cite specific evidence when possible. Be concrete. 100-180 words.' +
+      sysPrompt = 'You are ' + skill.name + ' in an academic roundtable.\n\nYour research profile:\n' + persona + '\n\nMake ONE specific academic move: question an assumption, offer a methodological concern, connect to your work, or propose an alternative interpretation. Cite specific evidence when possible. Be concrete. 100-180 words.\n\nIMPORTANT: Only apply your specific research framework if the topic genuinely intersects with your expertise. If the topic is about general experimental design or methodology, contribute your general scientific judgment rather than forcing your niche framework onto it. Be a helpful colleague, not a one-note theorist.' +
         (useSearch ? '\n\nUse web search to find relevant literature before responding.' : '');
       userMsg = 'Topic: "' + text + '"' + litNote + (transcript ? '\n\nPrior discussion:\n' + transcript : '');
     } else if (discussMode === 'adversarial') {
       var stance = i % 2 === 0 ? 'argue FOR' : 'argue AGAINST';
-      sysPrompt = 'You are ' + skill.name + '. You must ' + stance + ' the proposition based on your research framework.\n\nYour research profile:\n' + persona + '\n\nCite specific evidence. Be direct. 100-180 words.' +
+      sysPrompt = 'You are ' + skill.name + '. You must ' + stance + ' the proposition based on your research framework.\n\nYour research profile:\n' + persona + '\n\nCite specific evidence. Be direct. 100-180 words. If the proposition is outside your core expertise, argue from general scientific principles and methodology rather than forcing your niche framework.' +
         (useSearch ? '\n\nUse web search to find supporting evidence.' : '');
       userMsg = 'Proposition: "' + text + '"' + litNote;
     } else if (discussMode === 'roles') {
       var myRole = getAssignedRole(skill.id, i);
-      sysPrompt = 'You are ' + skill.name + ', playing the role of ' + myRole + ' in a structured discussion.\n\nYour research profile:\n' + persona + '\n\nRespond strictly from your ' + myRole + ' role. Cite evidence. 100-180 words.' +
+      sysPrompt = 'You are ' + skill.name + ', playing the role of ' + myRole + ' in a structured discussion.\n\nYour research profile:\n' + persona + '\n\nRespond strictly from your ' + myRole + ' role. Cite evidence. 100-180 words. Apply your specific expertise only when relevant; otherwise use your general scientific training.' +
         (useSearch ? '\n\nUse web search to ground your contribution.' : '');
       userMsg = 'Topic: "' + text + '"' + litNote + (transcript ? '\n\nDiscussion so far:\n' + transcript : '');
     } else if (discussMode === 'review') {
