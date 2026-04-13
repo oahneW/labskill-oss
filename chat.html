@@ -523,10 +523,23 @@ async function sendChat() {
   chatHistory.push({ role: 'user', content: msg });
 
   try {
-    // STEP 1: Determine what to search based on this PI's Agentic Protocol
+    // STEP 1: Generate search queries using full Agentic Protocol
     var agenticSection = extractAgenticProtocol(selectedSkill.skillContent || '');
-    var step1System = 'You are ' + selectedSkill.name + '. Based on your research persona and Agentic Protocol, decide what to search before answering this question.\n\nYour persona:\n' + (selectedSkill.skillContent || '').slice(0, 800) + '\n\nReturn ONLY a JSON array of 2-3 search queries (strings), nothing else. Make them specific to your epistemological standards.\nExample: ["moral decision-making ultimatum game 2024 meta-analysis", "fMRI behavioral convergence social preferences"]';
-    var step1Reply = await callClaude([{ role: 'user', content: 'Question: ' + msg + '\n\nWhat should I search to answer this well, given my research standards?' }], step1System, 300, false);
+    var epistemicContext = extractPrioritizedSkill(selectedSkill.skillContent || '', 1600);
+
+    var step1System = 'You are ' + selectedSkill.name + '. You must decide what literature to search before answering a research question.\n\n' +
+      (agenticSection ? 'YOUR AGENTIC PROTOCOL (follow this closely):\n' + agenticSection + '\n\n' : '') +
+      'YOUR RESEARCH FRAMEWORK:\n' + epistemicContext.slice(0, 800) + '\n\n' +
+      'TASK: Generate 2-4 specific search queries that reflect YOUR epistemic standards.\n' +
+      'Each query should target a different type of evidence you value:\n' +
+      '- One query for the core empirical evidence\n' +
+      '- One query for methodological quality/replication status\n' +
+      '- One query for your specific theoretical framework\n' +
+      '- (Optional) One query for recent meta-analyses or reviews\n\n' +
+      'Return ONLY a JSON array of strings. Make queries specific and searchable (3-8 words each).\n' +
+      'BAD: ["decision making research"]\nGOOD: ["loss aversion breathing manipulation fMRI 2023", "interoception risk decision meta-analysis"]';
+
+    var step1Reply = await callClaude([{ role: 'user', content: 'Research question: ' + msg }], step1System, 400, false);
 
     var queries = [];
     try {
@@ -535,21 +548,40 @@ async function sendChat() {
       if (s >= 0 && e2 > s) queries = JSON.parse(clean.slice(s, e2 + 1));
     } catch(pe) { queries = [msg]; }
     if (!queries.length) queries = [msg];
+    // Cap at 4 queries
+    if (queries.length > 4) queries = queries.slice(0, 4);
 
     // Show what we're searching
     showSearchIndicator(queries);
 
-    // STEP 2: Search and answer
-    var memContext = summaries.length ? 'Earlier conversation summary:\n' + summaries.map(function(s) { return '- ' + s.summary; }).join('\n') + '\n\n' : '';
-    var recentHistory = chatHistory.slice(-8);
+    // STEP 2: Search and answer with prioritized persona content
+    var memContext = summaries.length ? 'CONVERSATION CONTEXT:\n' + summaries.map(function(s) { return '- ' + s.summary; }).join('\n') + '\n\n' : '';
+    var recentHistory = chatHistory.slice(-10);
+    var fullPersona = extractPrioritizedSkill(selectedSkill.skillContent || '', 2400);
 
-    var step2System = 'You are ' + selectedSkill.name + '. Use your web search tool to search for: ' + queries.join('; ') + '\n\nThen answer the user\'s question using what you find, analyzed through your research framework.\n\nYour persona:\n' + (selectedSkill.skillContent || '').slice(0, 1200) + '\n\n' + memContext +
-      'STYLE:\n- Speak as this researcher, use first person\n- Ground your answer in what you actually searched and found\n- Be specific and honest — if search results are thin, say so\n- This is a real conversation, not a lecture. Keep it focused.\n- 150-350 words unless the question requires more';
+    var step2System = 'You are ' + selectedSkill.name + ', responding as this researcher in a research conversation.\n\n' +
+      'YOUR RESEARCH PERSONA:\n' + fullPersona + '\n\n' + memContext +
+      'SEARCH INSTRUCTIONS:\n' +
+      'Use your web search tool to search for the following queries (search each one separately):\n' +
+      queries.map(function(q, i) { return (i+1) + '. "' + q + '"'; }).join('\n') + '\n\n' +
+      'EVIDENCE QUALITY RULES:\n' +
+      '- Only cite papers/sources that DIRECTLY address the question. Ignore tangentially related results.\n' +
+      '- If a search result is not clearly relevant, do NOT cite it. Say "I did not find strong evidence on X" instead.\n' +
+      '- Distinguish between: strong evidence (multiple converging studies), moderate evidence (1-2 studies), and speculation (your inference).\n' +
+      '- When citing, include author names and year when available.\n' +
+      '- If search results conflict with each other, note the disagreement explicitly.\n\n' +
+      'RESPONSE STYLE:\n' +
+      '- Speak as this researcher in first person\n' +
+      '- Ground claims in what you actually found — do not fabricate citations\n' +
+      '- Be specific and honest — if search results are thin, say so clearly\n' +
+      '- Perform quantitative reasoning when the question involves numbers or experimental design\n' +
+      '- This is a real conversation, not a lecture. Keep it focused.\n' +
+      '- 200-500 words unless the question requires more or less';
 
     var messages = recentHistory.slice(0, -1).map(function(h) { return { role: h.role, content: h.content }; });
-    messages.push({ role: 'user', content: msg + '\n\n[Search for: ' + queries.join(', ') + ']' });
+    messages.push({ role: 'user', content: msg });
 
-    var reply = await callClaude(messages, step2System, 1000, true);
+    var reply = await callClaude(messages, step2System, 2000, true);
 
     removeSearchIndicator();
     appendMsg('pi', reply);
@@ -574,7 +606,63 @@ function extractAgenticProtocol(content) {
   var idx = content.indexOf('## Agentic Protocol');
   if (idx === -1) return '';
   var end = content.indexOf('\n## ', idx + 10);
-  return end > -1 ? content.slice(idx, end) : content.slice(idx, idx + 600);
+  return end > -1 ? content.slice(idx, end) : content.slice(idx, idx + 800);
+}
+
+// Extract skill content by section priority, fitting within maxLen characters.
+// Priority: Agentic Protocol > Epistemological Stance > Methodological Toolkit > Theoretical Commitments > Research Taste > rest
+function extractPrioritizedSkill(content, maxLen) {
+  if (!content) return '';
+  maxLen = maxLen || 2400;
+  var sectionOrder = [
+    'Agentic Protocol',
+    'Epistemological Stance',
+    'Methodological Toolkit',
+    'Theoretical Commitments',
+    'Reviewing & Publication Standards',
+    'Research Taste',
+    'Open Science Stance',
+    'Blind Spots',
+    'Voice Sample'
+  ];
+  // Parse sections
+  var sections = {};
+  var headerRegex = /^## (.+?)(?:\s*\[.*\])?\s*$/gm;
+  var match;
+  var positions = [];
+  while ((match = headerRegex.exec(content)) !== null) {
+    positions.push({ name: match[1].trim(), start: match.index });
+  }
+  for (var i = 0; i < positions.length; i++) {
+    var end = i + 1 < positions.length ? positions[i + 1].start : content.length;
+    sections[positions[i].name] = content.slice(positions[i].start, end).trim();
+  }
+  // Get header (everything before first ##)
+  var firstH = content.indexOf('\n## ');
+  var header = firstH > 0 ? content.slice(0, firstH).trim() : '';
+  // Build output by priority
+  var result = header ? header.slice(0, 300) + '\n\n' : '';
+  for (var j = 0; j < sectionOrder.length; j++) {
+    var secName = sectionOrder[j];
+    // Try exact match first, then partial match
+    var secContent = sections[secName];
+    if (!secContent) {
+      var keys = Object.keys(sections);
+      for (var k = 0; k < keys.length; k++) {
+        if (keys[k].toLowerCase().indexOf(secName.toLowerCase().split(' ')[0]) > -1) {
+          secContent = sections[keys[k]];
+          break;
+        }
+      }
+    }
+    if (secContent && result.length + secContent.length < maxLen) {
+      result += secContent + '\n\n';
+    } else if (secContent && result.length < maxLen - 200) {
+      // Truncate this section to fit
+      result += secContent.slice(0, maxLen - result.length - 50) + '...\n\n';
+    }
+  }
+  return result.trim();
 }
 
 async function summarizeHistory() {
@@ -597,9 +685,10 @@ async function generateStarters(skill) {
   sw.style.display = 'block';
   sb.innerHTML = '<span style="font-family:var(--mono);font-size:11px;color:var(--muted);">Generating...</span>';
   try {
+    var persona = extractPrioritizedSkill(skill.skillContent || '', 1200);
     var reply = await callClaude(
-      [{ role: 'user', content: 'Based on this researcher persona, generate 3 specific conversation starter questions a researcher might ask them. Make them concrete, not generic. Return ONLY a JSON array of 3 strings.\n\n' + (skill.skillContent || '').slice(0, 1000) }],
-      null, 300, false
+      [{ role: 'user', content: 'Based on this researcher persona, generate 3 specific conversation starter questions. Each should target a different aspect: (1) a methodological question about their preferred approach, (2) a question about a current debate in their field, (3) a question asking them to evaluate a research design. Make them concrete and specific to THIS researcher, not generic. Return ONLY a JSON array of 3 strings.\n\n' + persona }],
+      null, 400, false
     );
     var clean = reply.replace(/```json/g, '').replace(/```/g, '').trim();
     var s = clean.indexOf('['); var e2 = clean.lastIndexOf(']');
@@ -738,48 +827,64 @@ async function sendRoundtable() {
   msgEl.appendChild(topicDiv);
 
   rtHistory.push({ role: 'user', content: text });
-  var transcript = rtHistory.slice(-6).map(function(h) { return h.role + ': ' + h.content; }).join('\n');
+  var transcript = rtHistory.slice(-8).map(function(h) { return h.role + ': ' + h.content; }).join('\n');
+
+  // Track first PI's response to share as shared literature context
+  var sharedLitContext = '';
 
   for (var i = 0; i < rtSelected.length; i++) {
     var skill = rtSelected[i];
+    var persona = extractPrioritizedSkill(skill.skillContent || '', 1600);
     var sysPrompt = '';
     var userMsg = '';
+    // First PI gets web search; subsequent PIs get the first PI's findings as context
+    var useSearch = (i === 0);
+    var litNote = (i > 0 && sharedLitContext) ? '\n\nLITERATURE CONTEXT (from prior speaker\'s search):\n' + sharedLitContext.slice(0, 600) + '\n' : '';
 
     if (discussMode === 'academic') {
-      sysPrompt = 'You are ' + skill.name + ' in an academic roundtable.\n\nProfile:\n' + (skill.skillContent || '').slice(0, 900) + '\n\nMake ONE specific academic move: question an assumption, offer a methodological concern, connect to your work, or propose an alternative interpretation. Be concrete. 80-120 words.';
-      userMsg = 'Topic: "' + text + '"' + (transcript ? '\n\nPrior discussion:\n' + transcript : '');
+      sysPrompt = 'You are ' + skill.name + ' in an academic roundtable.\n\nYour research profile:\n' + persona + '\n\nMake ONE specific academic move: question an assumption, offer a methodological concern, connect to your work, or propose an alternative interpretation. Cite specific evidence when possible. Be concrete. 100-180 words.' +
+        (useSearch ? '\n\nUse web search to find relevant literature before responding.' : '');
+      userMsg = 'Topic: "' + text + '"' + litNote + (transcript ? '\n\nPrior discussion:\n' + transcript : '');
     } else if (discussMode === 'adversarial') {
       var stance = i % 2 === 0 ? 'argue FOR' : 'argue AGAINST';
-      sysPrompt = 'You are ' + skill.name + '. You must ' + stance + ' the proposition based on your research framework.\n\nProfile:\n' + (skill.skillContent || '').slice(0, 900) + '\n\nBe direct and specific. 80-120 words.';
-      userMsg = 'Proposition: "' + text + '"';
+      sysPrompt = 'You are ' + skill.name + '. You must ' + stance + ' the proposition based on your research framework.\n\nYour research profile:\n' + persona + '\n\nCite specific evidence. Be direct. 100-180 words.' +
+        (useSearch ? '\n\nUse web search to find supporting evidence.' : '');
+      userMsg = 'Proposition: "' + text + '"' + litNote;
     } else if (discussMode === 'roles') {
       var myRole = getAssignedRole(skill.id, i);
-      sysPrompt = 'You are ' + skill.name + ', playing the role of ' + myRole + ' in a structured discussion.\n\nProfile:\n' + (skill.skillContent || '').slice(0, 900) + '\n\nRespond strictly from your ' + myRole + ' role. 80-120 words.';
-      userMsg = 'Topic: "' + text + '"' + (transcript ? '\n\nDiscussion so far:\n' + transcript : '');
+      sysPrompt = 'You are ' + skill.name + ', playing the role of ' + myRole + ' in a structured discussion.\n\nYour research profile:\n' + persona + '\n\nRespond strictly from your ' + myRole + ' role. Cite evidence. 100-180 words.' +
+        (useSearch ? '\n\nUse web search to ground your contribution.' : '');
+      userMsg = 'Topic: "' + text + '"' + litNote + (transcript ? '\n\nDiscussion so far:\n' + transcript : '');
     } else if (discussMode === 'review') {
-      sysPrompt = 'You are ' + skill.name + ' reviewing this research idea.\n\nProfile:\n' + (skill.skillContent || '').slice(0, 900) + '\n\nFormat exactly:\nSTRENGTH: [one specific strength]\nFATAL FLAW: [most damaging problem]\nVERDICT: [Accept/Major revision/Reject] — [one line reason]';
-      userMsg = 'Research idea: "' + text + '"';
+      sysPrompt = 'You are ' + skill.name + ' reviewing this research idea.\n\nYour research profile:\n' + persona + '\n\nFormat exactly:\nSTRENGTH: [one specific strength, with evidence if available]\nFATAL FLAW: [most damaging problem, citing relevant literature]\nVERDICT: [Accept/Major revision/Reject] — [one line reason]' +
+        (useSearch ? '\n\nUse web search to check the literature before reviewing.' : '');
+      userMsg = 'Research idea: "' + text + '"' + litNote;
     } else if (discussMode === 'socratic') {
-      sysPrompt = 'You are ' + skill.name + ' conducting Socratic questioning.\n\nProfile:\n' + (skill.skillContent || '').slice(0, 900) + '\n\nAsk ONE probing question only. No opinions. Target a specific assumption or gap. Just the question, nothing else.';
-      userMsg = 'Topic: "' + text + '"' + (transcript ? '\n\nWhat has been said:\n' + transcript : '');
+      sysPrompt = 'You are ' + skill.name + ' conducting Socratic questioning.\n\nYour research profile:\n' + persona + '\n\nAsk ONE probing question only. No opinions. Target a specific assumption or gap. Just the question, nothing else.' +
+        (useSearch ? '\n\nYou may search first to identify the most incisive question.' : '');
+      userMsg = 'Topic: "' + text + '"' + litNote + (transcript ? '\n\nWhat has been said:\n' + transcript : '');
     }
 
     var loadDiv = document.createElement('div');
     loadDiv.className = 'rt-msg';
-    loadDiv.innerHTML = '<div class="rt-speaker">' + skill.name.toUpperCase() + '</div><div class="rt-body"><span class="typing-dot"></span> <span class="typing-dot"></span> <span class="typing-dot"></span></div>';
+    loadDiv.innerHTML = '<div class="rt-speaker">' + skill.name.toUpperCase() + (useSearch ? ' <span style="font-size:9px;color:var(--accent);">(searching literature...)</span>' : '') + '</div><div class="rt-body"><span class="typing-dot"></span> <span class="typing-dot"></span> <span class="typing-dot"></span></div>';
     msgEl.appendChild(loadDiv);
     msgEl.scrollTop = msgEl.scrollHeight;
 
     try {
-      var reply = await callClaude([{ role: 'user', content: userMsg }], sysPrompt, 400, false);
+      var reply = await callClaude([{ role: 'user', content: userMsg }], sysPrompt, 800, useSearch);
+      // Update speaker label (remove searching indicator)
+      loadDiv.querySelector('.rt-speaker').textContent = skill.name.toUpperCase();
       loadDiv.querySelector('.rt-body').innerHTML = marked.parse(reply);
       rtHistory.push({ role: skill.name, content: reply });
       saveRtHistory();
+      // Capture first PI's response as shared literature context
+      if (i === 0) sharedLitContext = reply;
     } catch(e) {
       loadDiv.querySelector('.rt-body').textContent = 'Error: ' + e.message;
     }
     msgEl.scrollTop = msgEl.scrollHeight;
-    if (i < rtSelected.length - 1) await new Promise(function(r){ setTimeout(r, 3000); });
+    if (i < rtSelected.length - 1) await new Promise(function(r){ setTimeout(r, 2000); });
   }
   btn.disabled = false;
   if (rtHistory.length > 0) document.getElementById('synthesis-bar').style.display = 'flex';
@@ -845,10 +950,16 @@ async function generateSynthesis() {
     return (h.role === 'user' ? 'QUESTION' : h.role.toUpperCase()) + ':\n' + h.content;
   }).join('\n\n---\n\n');
   var system = 'You are synthesizing an academic roundtable between ' + piNames + '. ' +
-    'Identify what dimensions are most relevant (e.g. hypothesis, methodology, disagreements, risks, open questions). ' +
-    'Generate 3-5 synthesis points specific to THIS discussion. Format as markdown with headers. Under 300 words.';
+    'Analyze the discussion and generate a structured synthesis.\n\n' +
+    'STRUCTURE YOUR OUTPUT AS:\n' +
+    '### Points of Agreement\n[What do the PIs converge on?]\n\n' +
+    '### Points of Disagreement\n[Where do they diverge? What are the underlying epistemic differences?]\n\n' +
+    '### Methodological Implications\n[What experimental designs or approaches emerge from this discussion?]\n\n' +
+    '### Open Questions\n[What remains unresolved? What would need to be tested?]\n\n' +
+    '### Actionable Next Steps\n[Concrete suggestions for moving forward]\n\n' +
+    'Be specific and reference what each PI actually said. Under 400 words.';
   try {
-    var reply = await callClaude([{role:'user', content:'Synthesize:\n\n' + transcript}], system, 600, false);
+    var reply = await callClaude([{role:'user', content:'Synthesize this roundtable discussion:\n\n' + transcript}], system, 1200, false);
     var msgEl = document.getElementById('rt-messages');
     var div = document.createElement('div');
     div.className = 'synthesis-block';

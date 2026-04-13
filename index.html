@@ -725,17 +725,26 @@ function setStep(n) {
 async function extractPaperInsights(authorName, paperList) {
   if (!paperList.length) return [];
   var insights = [];
-  // Process in batches of 3
-  for (var i = 0; i < paperList.length && i < 9; i += 3) {
+  // Process in batches of 3, up to 12 papers
+  for (var i = 0; i < paperList.length && i < 12; i += 3) {
     var batch = paperList.slice(i, i + 3);
     var batchText = batch.map(function(p, j) {
       return '[P' + (i+j+1) + '] ' + p.title + ' (' + (p.year||'?') + ', ' + p.citations + ' citations)\n' + p.abstract;
     }).join('\n\n');
     try {
       var reply = await callClaude([{role:'user', content:
-        'For each paper by ' + authorName + ', extract in JSON (no markdown):\n' +
-        '[{"method":"main method/paradigm in 1 sentence","finding":"key finding in 1 sentence","contribution":"theoretical/methodological contribution in 1 sentence","evidence":"behavioral|neural|computational|review"}]\n\nPapers:\n' + batchText
-      }], { maxTokens: 500 });
+        'For each paper by ' + authorName + ', extract the following in JSON (no markdown, no preamble):\n' +
+        '[{\n' +
+        '  "method": "main method/paradigm in 1 sentence",\n' +
+        '  "finding": "key finding in 1 sentence",\n' +
+        '  "contribution": "theoretical/methodological contribution in 1 sentence",\n' +
+        '  "evidence_type": "behavioral|neural|computational|review|meta-analysis|theoretical",\n' +
+        '  "paradigm": "specific task or paradigm name, e.g. ultimatum game, Stroop, drift diffusion model",\n' +
+        '  "sample_type": "students|clinical|online|large-scale|meta|other",\n' +
+        '  "stats_approach": "frequentist|bayesian|computational-modeling|mixed-methods|qualitative|descriptive",\n' +
+        '  "open_science": "preregistered|open-data|open-code|none-mentioned|unknown"\n' +
+        '}]\n\nIf a field cannot be determined from the abstract, use "unknown". Be precise.\n\nPapers:\n' + batchText
+      }], { maxTokens: 800 });
       var clean = reply.replace(/```json/g,'').replace(/```/g,'').trim();
       var s = clean.indexOf('['), e = clean.lastIndexOf(']');
       if (s >= 0 && e > s) {
@@ -744,38 +753,67 @@ async function extractPaperInsights(authorName, paperList) {
       }
     } catch(e2) {
       // fallback: use raw abstract for this batch
-      batch.forEach(function(p) { insights.push({method:'',finding:p.abstract.slice(0,120),contribution:'',evidence:'unknown'}); });
+      batch.forEach(function(p) { insights.push({method:'',finding:p.abstract.slice(0,150),contribution:'',evidence_type:'unknown',paradigm:'unknown',sample_type:'unknown',stats_approach:'unknown',open_science:'unknown'}); });
     }
-    if (i + 3 < Math.min(paperList.length, 9)) await sleep(1500);
+    if (i + 3 < Math.min(paperList.length, 12)) await sleep(1200);
   }
   return insights;
+}
+
+// Aggregate paper insights into a methodological profile summary
+function aggregateInsights(insights) {
+  if (!insights.length) return '';
+  var counts = { evidence: {}, paradigm: {}, sample: {}, stats: {}, openSci: {} };
+  insights.forEach(function(ins) {
+    if (ins.evidence_type && ins.evidence_type !== 'unknown') counts.evidence[ins.evidence_type] = (counts.evidence[ins.evidence_type]||0) + 1;
+    if (ins.paradigm && ins.paradigm !== 'unknown') counts.paradigm[ins.paradigm] = (counts.paradigm[ins.paradigm]||0) + 1;
+    if (ins.sample_type && ins.sample_type !== 'unknown') counts.sample[ins.sample_type] = (counts.sample[ins.sample_type]||0) + 1;
+    if (ins.stats_approach && ins.stats_approach !== 'unknown') counts.stats[ins.stats_approach] = (counts.stats[ins.stats_approach]||0) + 1;
+    if (ins.open_science && ins.open_science !== 'unknown' && ins.open_science !== 'none-mentioned') counts.openSci[ins.open_science] = (counts.openSci[ins.open_science]||0) + 1;
+  });
+  var topN = function(obj, n) {
+    return Object.keys(obj).sort(function(a,b){return obj[b]-obj[a];}).slice(0, n||5).map(function(k){return k + ' (' + obj[k] + ')';}).join(', ');
+  };
+  var lines = [];
+  if (Object.keys(counts.evidence).length) lines.push('Evidence types: ' + topN(counts.evidence));
+  if (Object.keys(counts.paradigm).length) lines.push('Common paradigms: ' + topN(counts.paradigm));
+  if (Object.keys(counts.sample).length) lines.push('Sample types: ' + topN(counts.sample));
+  if (Object.keys(counts.stats).length) lines.push('Statistical approaches: ' + topN(counts.stats));
+  if (Object.keys(counts.openSci).length) lines.push('Open science practices: ' + topN(counts.openSci));
+  return lines.length ? '\n\nMETHODOLOGICAL PROFILE (extracted from ' + insights.length + ' papers):\n' + lines.join('\n') : '';
 }
 
 function buildPrompt() {
   if (curTab === 'lab') {
     if (!selAuthor) return null;
-    var top = papers.filter(function(p) { return p.abstract; }).slice(0, 9);
+    var top = papers.filter(function(p) { return p.abstract; }).slice(0, 12);
     var insights = window._paperInsights || [];
     var papersText = top.map(function(p, i) {
       var ins = insights[i];
       if (ins && ins.finding) {
         return '[P' + (i+1) + '] "' + p.title + '" (' + (p.year||'?') + ', ' + p.citations + ' citations)' +
-          (ins.evidence ? ' [' + ins.evidence + ']' : '') +
+          (ins.evidence_type && ins.evidence_type !== 'unknown' ? ' [' + ins.evidence_type + ']' : '') +
           (ins.method ? '\nMethod: ' + ins.method : '') +
+          (ins.paradigm && ins.paradigm !== 'unknown' ? '\nParadigm: ' + ins.paradigm : '') +
           (ins.finding ? '\nFinding: ' + ins.finding : '') +
-          (ins.contribution ? '\nContribution: ' + ins.contribution : '');
+          (ins.contribution ? '\nContribution: ' + ins.contribution : '') +
+          (ins.stats_approach && ins.stats_approach !== 'unknown' ? '\nStats: ' + ins.stats_approach : '') +
+          (ins.open_science && ins.open_science !== 'unknown' && ins.open_science !== 'none-mentioned' ? '\nOpen science: ' + ins.open_science : '');
       }
-      return '[P' + (i+1) + '] "' + p.title + '" (' + (p.year||'?') + ', ' + p.citations + ' citations)\n' + p.abstract.slice(0,200);
+      return '[P' + (i+1) + '] "' + p.title + '" (' + (p.year||'?') + ', ' + p.citations + ' citations)\n' + p.abstract.slice(0,350);
     }).join('\n\n');
     var goals = getChips('lab-goals') || 'topic selection, writing style';
     var pasteText = document.getElementById('paste-area').value.trim();
     filename = selAuthor.name.replace(/\s+/g, '-').toLowerCase() + '.skill.md';
 
-    var websiteInfo = publicSources.website ? '\n\nLAB WEBSITE:\n' + publicSources.website.slice(0, 300) : '';
-    var talksInfo = publicSources.talks ? '\n\nTALKS:\n' + publicSources.talks.slice(0, 400) : '';
-    var pasteInfo = pasteText ? '\n\nUSER MATERIALS:\n' + pasteText.slice(0, 800) : '';
+    var websiteInfo = publicSources.website ? '\n\nLAB WEBSITE:\n' + publicSources.website.slice(0, 400) : '';
+    var talksInfo = publicSources.talks ? '\n\nTALKS:\n' + publicSources.talks.slice(0, 500) : '';
+    var pasteInfo = pasteText ? '\n\nUSER MATERIALS:\n' + pasteText.slice(0, 1000) : '';
 
-    return 'You are building a deep academic persona distillation of ' + selAuthor.name + (selAuthor.affiliation ? ' (' + selAuthor.affiliation + ')' : '') + '.\n\nResearcher stats: h-index ' + selAuthor.hIndex + ', ' + (selAuthor.citationCount || 0).toLocaleString() + ' citations\nSkill purposes: ' + goals + '\n\nYou have been provided:\n- ' + top.length + ' papers with abstracts (see below)\n- Auto-searched public sources (website, talks, interviews)' + (pasteText ? '\n- User-provided supplementary materials' : '') + '\n\nPlus, run additional web searches to fill gaps:\n1. Search: "' + selAuthor.name + '" research philosophy methodology evidence\n2. Search: "' + selAuthor.name + '" replication open science preregistration OSF\n3. Search: "' + selAuthor.name + '" controversy debate criticism challenged\n\nSYNTHESIS TASK:\nAnalyze all sources and extract:\n1. Epistemological stance — what counts as convincing evidence to them?\n2. Theoretical commitments — which frameworks do they work within?\n3. Methodological beliefs — what designs do they trust/distrust?\n4. Reviewing standards — what makes a paper publishable in their view?\n5. Open science stance — preregistration, data sharing practices\n6. Agentic Protocol — derived from the above: when answering research questions, what should be searched first, and why? Make this SPECIFIC to this researcher\'s standards.\n\nRULES:\n- Cite paper numbers [P1] for claims from papers\n- Mark confidence: HIGH (3+ sources) / MED (1-2) / LOW (inferred)\n- Be honest about gaps\n- The Agentic Protocol must reflect THIS researcher\'s specific epistemic standards, not generic searches\n\nPAPERS:\n' + papersText + websiteInfo + talksInfo + pasteInfo + '\n\nOutput ONLY this complete CLAUDE.md file:\n\n---\nname: ' + selAuthor.name.replace(/\s+/g, '-').toLowerCase() + '.skill\ndescription: |\n  When to use: Conversations with ' + selAuthor.name + '\'s academic persona. Research evaluation through their lens.\n  When NOT to use: As biographical fact — this is a persona model built from public sources.\n---\n\n# ' + selAuthor.name + ' — Academic Research Skill\n\n## Distillation Report\n| Source | Status | Details |\n|--------|--------|---------|\n| Semantic Scholar | found | ' + papers.filter(function(p){return p.source==='ss';}).length + ' papers |\n| bioRxiv | [found/not found] | [count if found] |\n| PubMed | [found/not found] | [count if found] |\n| Lab website | [found/not found] | [URL or note] |\n| Public talks | [found/not found] | [summary or note] |\n| Web search | completed | 3 targeted searches |\n\n**Overall confidence: [HIGH/MED/LOW]** — [one sentence reason]\n\n## Epistemological Stance [HIGH/MED/LOW]\n[What counts as convincing evidence? Neural vs behavioral? Causal vs correlational? What methodology do they distrust? Cite [P1] etc.]\n\n## Theoretical Commitments [HIGH/MED/LOW]\n[Which frameworks do they commit to? What assumptions do they treat as given? What theories do they push against? Name specific frameworks.]\n\n## Methodological Toolkit [HIGH/MED/LOW]\n[Preferred paradigms, designs, statistical approaches. What they trust and distrust. Cite papers.]\n\n## Reviewing & Publication Standards [HIGH/MED/LOW]\n[What makes a paper publishable? What would make them reject? Any known editorial roles or public statements?]\n\n## Open Science Stance [HIGH/MED/LOW]\n[Preregistration practice? Data sharing? Stance on replication crisis? OSF presence?]\n\n## Research Taste [HIGH/MED/LOW]\n[What excites vs bores them? Concrete scenarios based on demonstrated taste.]\n\n## Agentic Protocol\n[CRITICAL: Derive this from the sections above. When answering research questions, this PI should search in this specific order, for these specific reasons rooted in their epistemic standards.]\n\nWhen evaluating a research idea or design:\n1. Search: [specific query derived from their epistemological stance] — because [reason tied to their standards]\n2. Search: [specific query derived from their methodological toolkit] — because [reason]\n3. Search: [specific query for their key theoretical framework] — because [reason]\n\nWhen discussing a paper:\n1. [What they check first and why]\n2. [What they check second and why]\n\nWhen asked about their field:\n1. [How they orient themselves before answering]\n\n## Blind Spots\n[What could not be extracted reliably? Where is this persona model likely wrong?]\n\n## Voice Sample\n[2-3 sentences AS this researcher answering: "What is the most important unsolved methodological problem in your field?" — mark if extrapolated]\n\n## Top Papers\n| Citations | Year | Title | Venue |\n|-----------|------|-------|\n[top 10 from provided data]';
+    // Include aggregated methodological profile
+    var methProfile = aggregateInsights(insights);
+
+    return 'You are building a deep academic persona distillation of ' + selAuthor.name + (selAuthor.affiliation ? ' (' + selAuthor.affiliation + ')' : '') + '.\n\nResearcher stats: h-index ' + selAuthor.hIndex + ', ' + (selAuthor.citationCount || 0).toLocaleString() + ' citations\nSkill purposes: ' + goals + '\n\nYou have been provided:\n- ' + top.length + ' papers with structured insights (see below)\n- Auto-searched public sources (website, talks, interviews)' + (pasteText ? '\n- User-provided supplementary materials' : '') + methProfile + '\n\nPlus, run additional web searches to fill gaps:\n1. Search: "' + selAuthor.name + '" research methodology philosophy approach\n2. Search: "' + selAuthor.name + '" open science preregistration replication\n3. Search: "' + selAuthor.name + '" interview lecture talk methodology\n4. Search: "' + selAuthor.name + '" criticism debate controversy\n\nSYNTHESIS TASK:\nAnalyze all sources — papers, web search results, methodological profile — and extract:\n1. Epistemological stance — what counts as convincing evidence to them? What do they distrust?\n2. Theoretical commitments — which specific frameworks do they work within?\n3. Methodological beliefs — what designs, paradigms, and statistical approaches do they prefer?\n4. Reviewing standards — what makes a paper publishable? What would they reject?\n5. Open science stance — preregistration, data sharing, replication\n6. Agentic Protocol — CRITICAL: derive this from their actual methodological profile above, NOT generic searches\n\nRULES:\n- Cite paper numbers [P1] for claims derived from papers\n- Use the METHODOLOGICAL PROFILE data above to ground your claims about their preferences\n- Mark confidence: HIGH (3+ sources + consistent pattern) / MED (1-2 sources) / LOW (inferred)\n- Be honest about gaps — say "could not determine" rather than guessing\n- The Agentic Protocol must reflect THIS researcher\'s demonstrated epistemic standards, not generic academic searches\n- For the Agentic Protocol, include CONCRETE search query templates with placeholders, not vague descriptions\n\nPAPERS:\n' + papersText + websiteInfo + talksInfo + pasteInfo + '\n\nOutput ONLY this complete CLAUDE.md file:\n\n---\nname: ' + selAuthor.name.replace(/\s+/g, '-').toLowerCase() + '.skill\ndescription: |\n  When to use: Conversations with ' + selAuthor.name + '\'s academic persona. Research evaluation through their lens.\n  When NOT to use: As biographical fact — this is a persona model built from public sources.\n---\n\n# ' + selAuthor.name + ' — Academic Research Skill\n\n## Distillation Report\n| Source | Status | Details |\n|--------|--------|---------|\n| Semantic Scholar | found | ' + papers.filter(function(p){return p.source==='ss';}).length + ' papers |\n| bioRxiv | [found/not found] | [count if found] |\n| PubMed | [found/not found] | [count if found] |\n| Lab website | [found/not found] | [URL or note] |\n| Public talks | [found/not found] | [summary or note] |\n| Web search | completed | 4 targeted searches |\n\n**Overall confidence: [HIGH/MED/LOW]** — [one sentence reason]\n\n## Epistemological Stance [HIGH/MED/LOW]\n[What counts as convincing evidence? What converging evidence do they require? What methodology do they distrust? Cite [P1] etc. Reference the methodological profile data.]\n\n## Theoretical Commitments [HIGH/MED/LOW]\n[Which specific frameworks do they commit to? What assumptions do they treat as given? What theories do they push against? Name specific frameworks and cite papers.]\n\n## Methodological Toolkit [HIGH/MED/LOW]\n[Preferred paradigms (name specific tasks/paradigms from the paper data), designs, statistical approaches (frequentist vs bayesian vs computational). What they trust and distrust. Cite papers.]\n\n## Reviewing & Publication Standards [HIGH/MED/LOW]\n[What makes a paper publishable? What would make them reject? What sample sizes, effect sizes, or statistical thresholds do they expect? Any known editorial roles?]\n\n## Open Science Stance [HIGH/MED/LOW]\n[Preregistration practice? Data sharing? Code sharing? Stance on replication crisis? OSF presence? Reference paper data.]\n\n## Research Taste [HIGH/MED/LOW]\n[What questions excite them? What bores them? Provide 2-3 concrete scenarios: "Would be excited by X because...", "Would be skeptical of Y because..."]\n\n## Agentic Protocol\n[CRITICAL: This section drives all future chat behavior. Derive search strategies from the sections above.]\n\nWhen evaluating a research idea or design:\n1. Search: "[specific query template with {TOPIC} placeholder]" — because [reason tied to their specific epistemic standards, citing which papers/evidence]\n2. Search: "[specific query for their preferred methodology] {TOPIC}" — because [reason from methodological toolkit]\n3. Search: "[specific query for their theoretical framework] {TOPIC}" — because [reason from theoretical commitments]\n4. Search: "{TOPIC} replication sample-size power" — because [reason from their standards]\n\nWhen discussing a paper:\n1. First check: [What specific aspect they examine first, based on their reviewing standards]\n2. Then check: [Second priority, with reason]\n3. Finally: [What they look for last]\n\nWhen asked about their field:\n1. [How they orient — which databases, which keywords, which frameworks]\n2. [What they prioritize — recency vs citations vs methodology]\n\nCRITICAL QUALITY RULES for the Agentic Protocol:\n- Every search query template must contain a {TOPIC} placeholder\n- Every "because" must reference a specific paper [P#] or methodological profile finding\n- At least one search must target the specific statistical/computational approach this PI uses\n- Do NOT use generic queries like "recent review" or "meta-analysis" without specificity\n\n## Blind Spots\n[What could not be extracted reliably? Where is this persona model likely wrong? What types of questions would this persona handle poorly?]\n\n## Voice Sample\n[2-3 sentences AS this researcher answering: "What is the most important unsolved methodological problem in your field?" — mark if extrapolated]\n\n## Top Papers\n| Citations | Year | Title | Venue |\n|-----------|------|-------|\n[top 10 from provided data]';
   } else {
     var fname = document.getElementById('field-name').value.trim();
     if (!fname) return null;
@@ -798,27 +836,68 @@ async function runDistill() {
   var owrap = document.getElementById('owrap');
   btn.disabled = true; msg.textContent = ''; prog.style.display = 'block'; owrap.style.display = 'none'; setStep(1);
 
-  // Extract structured insights from papers first (lab mode only)
+  // STEP 1: Extract structured insights from papers (lab mode only)
   window._paperInsights = [];
   if (curTab === 'lab' && selAuthor) {
-    msg.textContent = 'Extracting insights from papers...';
-    var topPapers = papers.filter(function(p){return p.abstract;}).slice(0, 9);
+    msg.textContent = 'Extracting structured insights from papers...';
+    var topPapers = papers.filter(function(p){return p.abstract;}).slice(0, 12);
     window._paperInsights = await extractPaperInsights(selAuthor.name, topPapers);
-    msg.textContent = '';
+    msg.textContent = 'Extracted insights from ' + window._paperInsights.length + ' papers';
   }
 
+  setStep(2);
+
+  // STEP 2: Build the main distillation prompt (includes aggregated profile)
   var prompt = buildPrompt();
-  var timers = [setTimeout(function(){setStep(2);},8000), setTimeout(function(){setStep(3);},20000), setTimeout(function(){setStep(4);},35000)];
+  var timers = [setTimeout(function(){setStep(3);},12000), setTimeout(function(){setStep(4);},30000)];
+
   try {
-    var text = await callClaude([{ role: 'user', content: prompt }], { webSearch: true, maxTokens: 3000 });
-    timers.forEach(clearTimeout); setStep(5);
+    // Main distillation call with larger token budget
+    var text = await callClaude([{ role: 'user', content: prompt }], { webSearch: true, maxTokens: 4096 });
+    timers.forEach(clearTimeout); setStep(4);
     if (!text) throw new Error('No output from model');
+
+    // STEP 3: Validate and enhance the Agentic Protocol
+    msg.textContent = 'Validating Agentic Protocol...';
+    var agenticIdx = text.indexOf('## Agentic Protocol');
+    if (agenticIdx > -1 && curTab === 'lab') {
+      try {
+        var methProfile = aggregateInsights(window._paperInsights);
+        var validatePrompt = 'Review this Agentic Protocol section from a distilled researcher persona. Check if it is SPECIFIC enough.\n\n' +
+          'RESEARCHER: ' + selAuthor.name + '\n' +
+          methProfile + '\n\n' +
+          'CURRENT AGENTIC PROTOCOL:\n' + text.slice(agenticIdx, text.indexOf('\n## ', agenticIdx + 20) > -1 ? text.indexOf('\n## ', agenticIdx + 20) : agenticIdx + 1500) + '\n\n' +
+          'VALIDATION RULES:\n' +
+          '1. Every search query template MUST contain {TOPIC} placeholder\n' +
+          '2. Every "because" MUST reference a specific finding or paper\n' +
+          '3. Queries must include THIS researcher\'s specific methods (e.g., if they use computational modeling, include model-specific terms)\n' +
+          '4. NO generic queries like "recent review of {TOPIC}"\n\n' +
+          'If the protocol passes validation, return it unchanged.\n' +
+          'If it needs fixes, return the CORRECTED version only (starting from "## Agentic Protocol").\n' +
+          'Return ONLY the Agentic Protocol section, nothing else.';
+        var validated = await callClaude([{role:'user', content: validatePrompt}], { maxTokens: 1000 });
+        if (validated && validated.indexOf('Agentic Protocol') > -1) {
+          // Replace the agentic protocol section in the output
+          var apEnd = text.indexOf('\n## ', agenticIdx + 20);
+          if (apEnd > -1) {
+            text = text.slice(0, agenticIdx) + validated.trim() + '\n\n' + text.slice(apEnd);
+          } else {
+            text = text.slice(0, agenticIdx) + validated.trim();
+          }
+        }
+      } catch(valErr) {
+        // Validation failed, keep original — not critical
+      }
+    }
+
+    setStep(5);
     generated = text;
     document.getElementById('omd').innerHTML = marked.parse(text);
     document.getElementById('otitle').textContent = 'SKILL OUTPUT — ' + filename.toUpperCase();
     owrap.style.display = 'block';
     owrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
     Array.from(document.querySelectorAll('.pstep')).forEach(function(el) { el.classList.remove('active'); el.classList.add('done'); });
+    msg.textContent = '';
   } catch(e) {
     timers.forEach(clearTimeout);
     msg.textContent = 'Error: ' + e.message;
