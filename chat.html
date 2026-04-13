@@ -295,6 +295,8 @@ async function callClaude(messages, system, maxTokens, useWebSearch) {
   }
   var d = await res.json();
   if (!apiKey) incChatUsed();
+  // Track whether web search was actually invoked
+  window._lastCallUsedSearch = (d.content || []).some(function(b) { return b.type === 'web_search_tool_result' || b.type === 'tool_use'; });
   return (d.content || []).filter(function(b) { return b.type === 'text'; }).map(function(b) { return b.text; }).join('\n').trim();
 }
 
@@ -522,81 +524,59 @@ async function sendChat() {
 
   chatHistory.push({ role: 'user', content: msg });
 
+  // Show typing indicator
+  appendMsg('pi', '', true);
+
   try {
-    // STEP 1: Generate search queries using full Agentic Protocol
     var agenticSection = extractAgenticProtocol(selectedSkill.skillContent || '');
-    var epistemicContext = extractPrioritizedSkill(selectedSkill.skillContent || '', 1600);
-
-    var step1System = 'You are ' + selectedSkill.name + '. You must decide what literature to search before answering a research question.\n\n' +
-      (agenticSection ? 'YOUR AGENTIC PROTOCOL (follow this closely ONLY when the question is relevant to your specific research area):\n' + agenticSection + '\n\n' : '') +
-      'YOUR RESEARCH FRAMEWORK:\n' + epistemicContext.slice(0, 800) + '\n\n' +
-      'TASK: Generate 2-4 specific search queries.\n\n' +
-      'FIRST, judge the question type:\n' +
-      'A) If the question is DIRECTLY about your research area → use your Agentic Protocol to generate domain-specific queries\n' +
-      'B) If the question is about GENERAL experimental design, statistics, or methodology → generate queries about that specific design/stats topic, NOT about your niche framework. E.g., for "how many trials do I need" → search for power analysis and trial design literature, not for your pet theory.\n' +
-      'C) If the question is MIXED → generate some domain-specific and some general methodology queries\n\n' +
-      'For type A queries, target different evidence types:\n' +
-      '- Core empirical evidence\n' +
-      '- Methodological quality/replication\n' +
-      '- Your specific theoretical framework\n\n' +
-      'For type B queries, target:\n' +
-      '- Directly relevant methodological literature\n' +
-      '- Best practices and established guidelines\n' +
-      '- Similar experimental designs in the broader field\n\n' +
-      'Return ONLY a JSON array of strings. Make queries specific and searchable (3-8 words each).\n' +
-      'BAD: ["decision making research"]\nGOOD: ["loss aversion breathing manipulation fMRI 2023", "optimal trial count risk preference estimation"]';
-
-    var step1Reply = await callClaude([{ role: 'user', content: 'Research question: ' + msg }], step1System, 400, false);
-
-    var queries = [];
-    try {
-      var clean = step1Reply.replace(/```json/g, '').replace(/```/g, '').trim();
-      var s = clean.indexOf('['); var e2 = clean.lastIndexOf(']');
-      if (s >= 0 && e2 > s) queries = JSON.parse(clean.slice(s, e2 + 1));
-    } catch(pe) { queries = [msg]; }
-    if (!queries.length) queries = [msg];
-    // Cap at 4 queries
-    if (queries.length > 4) queries = queries.slice(0, 4);
-
-    // Show what we're searching
-    showSearchIndicator(queries);
-
-    // STEP 2: Search and answer with prioritized persona content
+    var fullPersona = extractPrioritizedSkill(selectedSkill.skillContent || '', 2400);
     var memContext = summaries.length ? 'CONVERSATION CONTEXT:\n' + summaries.map(function(s) { return '- ' + s.summary; }).join('\n') + '\n\n' : '';
     var recentHistory = chatHistory.slice(-10);
-    var fullPersona = extractPrioritizedSkill(selectedSkill.skillContent || '', 2400);
 
-    var step2System = 'You are ' + selectedSkill.name + ', responding as this researcher in a research conversation.\n\n' +
-      'YOUR RESEARCH PERSONA:\n' + fullPersona + '\n\n' + memContext +
-      'SEARCH INSTRUCTIONS:\n' +
-      'Use your web search tool to search for the following queries (search each one separately):\n' +
-      queries.map(function(q, i) { return (i+1) + '. "' + q + '"'; }).join('\n') + '\n\n' +
-      'EVIDENCE QUALITY RULES:\n' +
-      '- Only cite papers/sources that DIRECTLY address the question. Ignore tangentially related results.\n' +
-      '- If a search result is not clearly relevant, do NOT cite it. Say "I did not find strong evidence on X" instead.\n' +
-      '- Distinguish between: strong evidence (multiple converging studies), moderate evidence (1-2 studies), and speculation (your inference).\n' +
-      '- When citing, include author names and year when available.\n' +
-      '- If search results conflict with each other, note the disagreement explicitly.\n\n' +
+    var systemPrompt = 'You are ' + selectedSkill.name + ', responding as this researcher in a research conversation.\n\n' +
+      'YOUR RESEARCH PERSONA:\n' + fullPersona + '\n\n' +
+      (agenticSection ? 'YOUR AGENTIC PROTOCOL (use ONLY when the question is relevant to your specific research area):\n' + agenticSection + '\n\n' : '') +
+      memContext +
+      'WEB SEARCH — YOU DECIDE:\n' +
+      'You have a web search tool available. Use it ONLY when the question genuinely requires current literature:\n' +
+      'SEARCH when asked about: current evidence on a topic, specific published findings, replication status, recent developments, theoretical debates\n' +
+      'DO NOT SEARCH when asked about: practical experimental design (trial counts, block structure, counterbalancing), math/statistics calculations, the user\'s own setup, follow-up or clarification questions, things you can answer from knowledge and conversation context\n' +
+      'When you do search, follow these evidence quality rules:\n' +
+      '- Only cite sources that DIRECTLY address the question — ignore tangentially related results\n' +
+      '- Distinguish between strong evidence (multiple converging studies), moderate evidence (1-2 studies), and your own inference\n' +
+      '- Include author names and year when citing\n' +
+      '- If results conflict, note the disagreement\n' +
+      '- If results are thin or irrelevant, say so honestly rather than padding with weak citations\n\n' +
       'RESPONSE STYLE:\n' +
       '- Speak as this researcher in first person\n' +
-      '- Ground claims in what you actually found — do not fabricate citations\n' +
-      '- Be specific and honest — if search results are thin, say so clearly\n' +
-      '- Perform quantitative reasoning when the question involves numbers or experimental design\n' +
+      '- Be specific and honest\n' +
       '- This is a real conversation, not a lecture. Keep it focused.\n' +
-      '- 200-500 words unless the question requires more or less\n\n' +
+      '- 100-500 words depending on complexity — short questions get short answers\n\n' +
       'CRITICAL — ADAPTIVE EXPERTISE:\n' +
-      '- Judge whether the question actually requires your specific research framework, or whether it is a general methodology/design/statistics question that any competent researcher could answer.\n' +
-      '- If the question is about general experimental design (e.g. trial counts, counterbalancing, block structure, which condition to remove), answer it with clear analytical reasoning. Do NOT force your niche framework onto every question.\n' +
-      '- Only apply your specific theoretical lens when the question genuinely intersects with your area of expertise.\n' +
+      '- Judge whether the question requires your specific research framework or is a general methodology/design/statistics question.\n' +
+      '- For general design questions (trial counts, counterbalancing, block structure, which condition to remove): use clear analytical reasoning. Do NOT force your niche framework onto it.\n' +
+      '- Only apply your specific theoretical lens when the question genuinely intersects with your expertise.\n' +
       '- When a question involves concrete numbers or parameters, DO THE MATH FIRST. Calculate expected values, count trials, verify arithmetic before giving advice.\n' +
-      '- Think like a helpful senior colleague, not like a one-trick theorist. Your value is your judgment and rigor, not just your pet framework.';
+      '- Think like a helpful senior colleague, not like a one-trick theorist.';
 
     var messages = recentHistory.slice(0, -1).map(function(h) { return { role: h.role, content: h.content }; });
     messages.push({ role: 'user', content: msg });
 
-    var reply = await callClaude(messages, step2System, 2000, true);
+    // Single API call — web search always available, model decides whether to use it
+    var reply = await callClaude(messages, systemPrompt, 2000, true);
 
-    removeSearchIndicator();
+    // Remove typing indicator and show response
+    var typingEl = document.getElementById('typing-msg');
+    if (typingEl) typingEl.remove();
+
+    // If model used search, show a subtle note
+    if (window._lastCallUsedSearch) {
+      var noteDiv = document.createElement('div');
+      noteDiv.className = 'search-result-note';
+      noteDiv.textContent = 'Searched current literature';
+      document.getElementById('chat-messages').appendChild(noteDiv);
+    }
+
     appendMsg('pi', reply);
     chatHistory.push({ role: 'assistant', content: reply });
     saveChatHistory(selectedSkill.id, chatHistory);
@@ -606,12 +586,13 @@ async function sendChat() {
       summarizeHistory();
     }
   } catch(e) {
+    var typingEl = document.getElementById('typing-msg');
+    if (typingEl) typingEl.remove();
     removeSearchIndicator();
-    var t = document.getElementById('typing-msg');
-    if (t) t.remove();
     appendMsg('pi', 'Error: ' + e.message);
   }
   document.getElementById('btn-send').disabled = false;
+  updateChatQuotaLabel();
 }
 
 function extractAgenticProtocol(content) {
