@@ -199,15 +199,13 @@ footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--b
 
 <div class="overlay" id="modal">
   <div class="modal">
-    <h3 id="mh">Welcome to LabSkill</h3>
+    <h3 id="mh">Usage Info</h3>
     <div id="mkey">
-      <p>Your key stays in your browser session only — never sent to any server.</p>
-      <input type="password" id="kin" placeholder="sk-ant-..." />
+      <p>This is a demo instance. Usage is tracked per browser.</p>
+      <p style="font-family:var(--mono);font-size:14px;margin-bottom:18px;" id="usage-display"></p>
       <div class="mbtns">
-        <button class="bp" onclick="saveKey()">Save and continue</button>
-        <button class="bs" onclick="closeModal()">Cancel</button>
+        <button class="bp" onclick="closeModal()">OK</button>
       </div>
-      <div class="mnote">Get a key at console.anthropic.com — about $0.05 per distillation</div>
     </div>
   </div>
 </div>
@@ -231,8 +229,8 @@ footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--b
     <button class="bghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">How it works</button>
   </div>
   <div class="hstats">
-    <div><div class="snum">Free</div><div class="slbl">Open source</div></div>
-    <div><div class="snum">BYOK</div><div class="slbl">Your API key</div></div>
+    <div><div class="snum">Demo</div><div class="slbl">Temporary access</div></div>
+    <div><div class="snum" id="hero-uses">--</div><div class="slbl">Uses remaining</div></div>
     <div><div class="snum">Live</div><div class="slbl">Literature search</div></div>
   </div>
 </div>
@@ -384,9 +382,9 @@ footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--b
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <script>
-var FREE_QUOTA = 3;
+var MAX_USES = 50; // 总使用次数上限，改这个数字
 var PROXY_URL = 'https://labskill-oss.venhao-huang.workers.dev/proxy';
-var apiKey = localStorage.getItem('ls_key') || '';
+var apiKey = 'YOUR_API_KEY_HERE'; // ← 把你的 API key 粘贴在这里
 var usingFree = false;
 var selAuthor = null;
 var papers = [];
@@ -395,55 +393,47 @@ var generated = '';
 var filename = 'skill.md';
 var curTab = 'lab';
 
-function getFreeUsed() { return parseInt(localStorage.getItem('ls_free') || '0'); }
-function incFree() { localStorage.setItem('ls_free', String(getFreeUsed() + 1)); }
-function freeLeft() { return Math.max(0, FREE_QUOTA - getFreeUsed()); }
+function getTotalUsed() { return parseInt(localStorage.getItem('ls_total_used') || '0'); }
+function incUsed() { var n = getTotalUsed() + 1; localStorage.setItem('ls_total_used', String(n)); updateBtn(); return n; }
+function usesLeft() { return Math.max(0, MAX_USES - getTotalUsed()); }
 
 function updateBtn() {
   var el = document.getElementById('kbtn');
-  if (apiKey) { el.textContent = 'API Key set'; el.className = 'key-btn set'; }
-  else { el.textContent = 'Add API Key'; el.className = 'key-btn unset'; }
+  var left = usesLeft();
+  el.textContent = 'Uses: ' + left + '/' + MAX_USES;
+  el.className = left > 0 ? 'key-btn set' : 'key-btn unset';
+  var hero = document.getElementById('hero-uses');
+  if (hero) hero.textContent = left;
 }
 
 function openModal() {
-  document.getElementById('mh').textContent = apiKey ? 'Update API Key' : 'Add your Anthropic API key';
+  document.getElementById('mh').textContent = 'Usage Info';
+  var el = document.getElementById('usage-display');
+  if (el) el.textContent = 'Remaining: ' + usesLeft() + ' / ' + MAX_USES;
   document.getElementById('modal').classList.add('open');
-  setTimeout(function() { document.getElementById('kin').focus(); }, 50);
 }
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
-function useFree() { usingFree = true; closeModal(); updateBtn(); }
-function showKey() {
-  document.getElementById('mfree').style.display = 'none';
-  document.getElementById('mkey').style.display = 'block';
-  document.getElementById('mh').textContent = 'Add your API key';
-  setTimeout(function() { document.getElementById('kin').focus(); }, 50);
-}
-function saveKey() {
-  var v = document.getElementById('kin').value.trim();
-  if (!v) return;
-  apiKey = v; usingFree = false;
-  localStorage.setItem('ls_key', v);
-  updateBtn(); closeModal();
-}
-document.getElementById('kin').addEventListener('keydown', function(e) { if (e.key === 'Enter') saveKey(); });
+function useFree() { closeModal(); }
+function showKey() { closeModal(); }
+function saveKey() { closeModal(); }
 document.getElementById('modal').addEventListener('click', function(e) { if (e.target === e.currentTarget) closeModal(); });
 updateBtn();
 
 function requireKey() {
-  if (apiKey) return true;
-  openModal(); return false;
+  if (usesLeft() <= 0) { alert('Usage limit reached (' + MAX_USES + ' uses). Contact the admin.'); return false; }
+  return true;
 }
 
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);})}
 
 async function callClaude(messages, opts) {
   opts = opts || {};
+  if (usesLeft() <= 0) throw new Error('Usage limit reached');
   var body = { max_tokens: opts.maxTokens || 2000, messages: messages };
   if (opts.webSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
-  // Always route through Cloudflare Worker to handle CORS
   var headers = { 'Content-Type': 'application/json' };
-  if (apiKey) headers['X-User-Key'] = apiKey;
-  else { incFree(); if (freeLeft() === 0) { usingFree = false; updateBtn(); } }
+  headers['X-User-Key'] = apiKey;
+  incUsed();
   var res = await fetch(PROXY_URL, { method: 'POST', headers: headers, body: JSON.stringify(body) });
   if (!res.ok) {
     var e = await res.json().catch(function() { return {}; });

@@ -131,14 +131,12 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 
 <div class="overlay" id="modal">
   <div class="modal">
-    <h3 id="mh">Add API Key</h3>
-    <p>Your key stays in your browser session only — never sent to any server.</p>
-    <input type="password" id="kin" placeholder="sk-ant-..." />
+    <h3 id="mh">Usage Info</h3>
+    <p>This is a demo instance with limited uses.</p>
+    <p style="font-family:var(--mono);font-size:14px;" id="usage-display"></p>
     <div class="mbtns">
-      <button class="bp" onclick="saveKey()">Save and continue</button>
-      <button class="bs" onclick="closeModal()">Cancel</button>
+      <button class="bp" onclick="closeModal()">OK</button>
     </div>
-    <div class="mnote">Get a key at console.anthropic.com</div>
   </div>
 </div>
 
@@ -225,8 +223,8 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-weigh
 <script>
 // ── STATE ─────────────────────────────────────────────────
 var PROXY_URL = 'https://labskill-oss.venhao-huang.workers.dev/proxy';
-var CHAT_DAILY_FREE = 20;
-var apiKey = localStorage.getItem('ls_key') || '';
+var MAX_USES = 50; // 总使用次数上限
+var apiKey = 'YOUR_API_KEY_HERE'; // ← 把你的 API key 粘贴在这里
 var mode = 'chat';
 var skills = [];
 var selectedSkill = null;
@@ -238,64 +236,54 @@ var discussMode = 'academic';
 var currentRtKey = '';
 var SUMMARY_EVERY = 10;
 
-// ── KEY MANAGEMENT ────────────────────────────────────────
+// ── USAGE TRACKING ───────────────────────────────────────
+function getTotalUsed() { return parseInt(localStorage.getItem('ls_total_used') || '0'); }
+function incUsed() { var n = getTotalUsed() + 1; localStorage.setItem('ls_total_used', String(n)); updateKeyBtn(); return n; }
+function usesLeft() { return Math.max(0, MAX_USES - getTotalUsed()); }
+
 function updateKeyBtn() {
   var el = document.getElementById('kbtn');
-  if (apiKey) { el.textContent = 'API Key set'; el.className = 'key-btn set'; }
-  else { el.textContent = 'Set API Key'; el.className = 'key-btn unset'; }
+  var left = usesLeft();
+  el.textContent = 'Uses: ' + left + '/' + MAX_USES;
+  el.className = left > 0 ? 'key-btn set' : 'key-btn unset';
+  var ql = document.getElementById('chat-quota-label');
+  if (ql) ql.textContent = '';
 }
-function openModal() { document.getElementById('modal').classList.add('open'); setTimeout(function(){ document.getElementById('kin').focus(); }, 50); }
+function openModal() {
+  var el = document.getElementById('usage-display');
+  if (el) el.textContent = 'Remaining: ' + usesLeft() + ' / ' + MAX_USES;
+  document.getElementById('modal').classList.add('open');
+}
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
-function saveKey() {
-  var v = document.getElementById('kin').value.trim();
-  if (!v) return;
-  apiKey = v; localStorage.setItem('ls_key', v);
-  updateKeyBtn(); closeModal();
-}
-document.getElementById('kin').addEventListener('keydown', function(e) { if (e.key === 'Enter') saveKey(); });
+function saveKey() { closeModal(); }
 document.getElementById('modal').addEventListener('click', function(e) { if (e.target === e.currentTarget) closeModal(); });
 updateKeyBtn();
 
-// Chat daily free quota (resets each day)
-function getChatDate() { return new Date().toISOString().slice(0,10); }
-function getChatUsed() {
-  var d = JSON.parse(localStorage.getItem('ls_chat_quota') || '{"date":"","used":0}');
-  if (d.date !== getChatDate()) return 0;
-  return d.used;
-}
-function incChatUsed() {
-  var used = getChatUsed() + 1;
-  localStorage.setItem('ls_chat_quota', JSON.stringify({date:getChatDate(), used:used}));
-}
-function chatFreeLeft() { return Math.max(0, CHAT_DAILY_FREE - getChatUsed()); }
 function requireChat() {
-  if (apiKey) return true;
-  if (chatFreeLeft() > 0) return true;
-  openModal();
-  return false;
+  if (usesLeft() <= 0) { alert('Usage limit reached (' + MAX_USES + ' uses).'); return false; }
+  return true;
 }
 
 function requireKey() {
-  if (apiKey) return true;
-  openModal(); return false;
+  if (usesLeft() <= 0) { alert('Usage limit reached (' + MAX_USES + ' uses).'); return false; }
+  return true;
 }
 
 // ── CLAUDE API ────────────────────────────────────────────
 async function callClaude(messages, system, maxTokens, useWebSearch) {
+  if (usesLeft() <= 0) throw new Error('Usage limit reached');
   var body = { max_tokens: maxTokens || 800, messages: messages };
   if (system) body.system = system;
   if (useWebSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
-  // Always route through Cloudflare Worker (CORS)
   var headers = { 'Content-Type': 'application/json' };
-  if (apiKey) headers['X-User-Key'] = apiKey;
+  headers['X-User-Key'] = apiKey;
+  incUsed();
   var res = await fetch(PROXY_URL, { method: 'POST', headers: headers, body: JSON.stringify(body) });
   if (!res.ok) {
     var e = await res.json().catch(function() { return {}; });
     throw new Error((e.error && e.error.message) || 'API error ' + res.status);
   }
   var d = await res.json();
-  if (!apiKey) incChatUsed();
-  // Track whether web search was actually invoked
   window._lastCallUsedSearch = (d.content || []).some(function(b) { return b.type === 'web_search_tool_result' || b.type === 'tool_use'; });
   return (d.content || []).filter(function(b) { return b.type === 'text'; }).map(function(b) { return b.text; }).join('\n').trim();
 }
@@ -1000,13 +988,7 @@ document.getElementById('rt-input').addEventListener('keydown', function(e) {
 function updateChatQuotaLabel() {
   var el = document.getElementById('chat-quota-label');
   if (!el) return;
-  if (!apiKey) {
-    var left = chatFreeLeft();
-    el.textContent = left > 0 ? left + ' free chats today' : 'Daily limit reached';
-    el.style.color = left > 0 ? 'var(--muted)' : 'var(--accent)';
-  } else {
-    el.textContent = '';
-  }
+  el.textContent = '';
 }
 loadSkills();
 var lastId = localStorage.getItem('ls_last_skill');
